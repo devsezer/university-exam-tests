@@ -5,9 +5,16 @@ export interface ExamType {
   created_at: string;
 }
 
+export interface Lesson {
+  id: string;
+  name: string;
+  created_at: string;
+}
+
 export interface Subject {
   id: string;
   name: string;
+  lesson_id: string;
   exam_type_id: string;
   created_at: string;
 }
@@ -16,6 +23,7 @@ export interface TestBook {
   id: string;
   name: string;
   exam_type_id: string;
+  lesson_id: string;
   subject_id: string;
   published_year: number;
   created_at: string;
@@ -64,19 +72,30 @@ export interface UpdateExamTypeRequest {
   description?: string;
 }
 
+export interface CreateLessonRequest {
+  name: string;
+}
+
+export interface UpdateLessonRequest {
+  name?: string;
+}
+
 export interface CreateSubjectRequest {
   name: string;
+  lesson_id: string;
   exam_type_id: string;
 }
 
 export interface UpdateSubjectRequest {
   name?: string;
+  lesson_id?: string;
   exam_type_id?: string;
 }
 
 export interface CreateTestBookRequest {
   name: string;
   exam_type_id: string;
+  lesson_id: string;
   subject_id: string;
   published_year: number;
 }
@@ -84,6 +103,7 @@ export interface CreateTestBookRequest {
 export interface UpdateTestBookRequest {
   name?: string;
   exam_type_id?: string;
+  lesson_id?: string;
   subject_id?: string;
   published_year?: number;
 }
@@ -103,4 +123,3 @@ export interface UpdatePracticeTestRequest {
   answer_key?: string;
   test_book_id?: string;
 }
-

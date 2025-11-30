@@ -3,11 +3,14 @@ import { Observable } from 'rxjs';
 import { ApiService } from '../../../core/services/api.service';
 import {
   ExamType,
+  Lesson,
   Subject,
   TestBook,
   PracticeTest,
   CreateExamTypeRequest,
   UpdateExamTypeRequest,
+  CreateLessonRequest,
+  UpdateLessonRequest,
   CreateSubjectRequest,
   UpdateSubjectRequest,
   CreateTestBookRequest,
@@ -46,6 +49,27 @@ export class AdminService {
     return this.api.get<ExamType[]>('/exam-types');
   }
 
+  // Lessons
+  createLesson(data: CreateLessonRequest): Observable<ApiResponse<Lesson>> {
+    return this.api.post<Lesson>('/admin/lessons', data);
+  }
+
+  updateLesson(id: string, data: UpdateLessonRequest): Observable<ApiResponse<Lesson>> {
+    return this.api.put<Lesson>(`/admin/lessons/${id}`, data);
+  }
+
+  deleteLesson(id: string): Observable<ApiResponse<void>> {
+    return this.api.delete<void>(`/admin/lessons/${id}`);
+  }
+
+  getLesson(id: string): Observable<ApiResponse<Lesson>> {
+    return this.api.get<Lesson>(`/admin/lessons/${id}`);
+  }
+
+  listLessons(): Observable<ApiResponse<Lesson[]>> {
+    return this.api.get<Lesson[]>('/lessons');
+  }
+
   // Subjects
   createSubject(data: CreateSubjectRequest): Observable<ApiResponse<Subject>> {
     return this.api.post<Subject>('/admin/subjects', data);
@@ -63,9 +87,11 @@ export class AdminService {
     return this.api.get<Subject>(`/admin/subjects/${id}`);
   }
 
-  listSubjects(examTypeId?: string): Observable<ApiResponse<Subject[]>> {
-    const params = examTypeId ? { exam_type_id: examTypeId } : undefined;
-    return this.api.get<Subject[]>('/subjects', params);
+  listSubjects(examTypeId?: string, lessonId?: string): Observable<ApiResponse<Subject[]>> {
+    const params: Record<string, string> = {};
+    if (examTypeId) params['exam_type_id'] = examTypeId;
+    if (lessonId) params['lesson_id'] = lessonId;
+    return this.api.get<Subject[]>('/subjects', Object.keys(params).length ? params : undefined);
   }
 
   // Test Books
@@ -146,4 +172,3 @@ export class AdminService {
     return this.api.get<Role[]>('/admin/roles');
   }
 }
-

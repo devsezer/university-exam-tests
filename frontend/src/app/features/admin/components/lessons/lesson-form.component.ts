@@ -1,14 +1,14 @@
-import { Component, OnInit, signal, effect } from '@angular/core';
+import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { AdminService } from '../../services/admin.service';
-import { Subject, ExamType, Lesson, CreateSubjectRequest, UpdateSubjectRequest } from '../../../../models/test.models';
+import { Lesson, CreateLessonRequest, UpdateLessonRequest } from '../../../../models/test.models';
 import { LoadingSpinnerComponent } from '../../../../shared/components/loading-spinner/loading-spinner.component';
 import { ErrorMessageComponent } from '../../../../shared/components/error-message/error-message.component';
 
 @Component({
-  selector: 'app-subject-form',
+  selector: 'app-lesson-form',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, RouterModule, LoadingSpinnerComponent, ErrorMessageComponent],
   template: `
@@ -19,7 +19,7 @@ import { ErrorMessageComponent } from '../../../../shared/components/error-messa
           ← Geri Dön
         </button>
         <h1 class="text-3xl font-bold text-gray-900">
-          {{ isEditMode() ? 'Konu Düzenle' : 'Yeni Konu' }}
+          {{ isEditMode() ? 'Ders Düzenle' : 'Yeni Ders' }}
         </h1>
       </div>
 
@@ -33,49 +33,15 @@ import { ErrorMessageComponent } from '../../../../shared/components/error-messa
         <div class="bg-white shadow rounded-lg p-6">
           <form [formGroup]="form" (ngSubmit)="onSubmit()" class="space-y-6">
             <div>
-              <label for="lesson_id" class="block text-sm font-medium text-gray-700">Ders *</label>
-              <select id="lesson_id" 
-                      formControlName="lesson_id"
-                      [disabled]="isEditMode()"
-                      class="mt-1 block w-full px-4 py-3 rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm disabled:bg-gray-100">
-                <option [value]="null">Ders seçiniz</option>
-                <option *ngFor="let lesson of lessons()" [value]="lesson.id">
-                  {{ lesson.name }}
-                </option>
-              </select>
-              <div *ngIf="form.get('lesson_id')?.invalid && form.get('lesson_id')?.touched" 
-                   class="mt-1 text-sm text-red-600">
-                Ders seçilmelidir
-              </div>
-            </div>
-
-            <div>
-              <label for="exam_type_id" class="block text-sm font-medium text-gray-700">Sınav Türü *</label>
-              <select id="exam_type_id" 
-                      formControlName="exam_type_id"
-                      [disabled]="isEditMode()"
-                      class="mt-1 block w-full px-4 py-3 rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm disabled:bg-gray-100">
-                <option [value]="null">Sınav türü seçiniz</option>
-                <option *ngFor="let examType of examTypes()" [value]="examType.id">
-                  {{ examType.name }}
-                </option>
-              </select>
-              <div *ngIf="form.get('exam_type_id')?.invalid && form.get('exam_type_id')?.touched" 
-                   class="mt-1 text-sm text-red-600">
-                Sınav türü seçilmelidir
-              </div>
-            </div>
-
-            <div>
-              <label for="name" class="block text-sm font-medium text-gray-700">Konu Adı *</label>
+              <label for="name" class="block text-sm font-medium text-gray-700">Ad *</label>
               <input id="name" 
                      type="text" 
                      formControlName="name"
                      class="mt-1 block w-full px-4 py-3 rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
-                     placeholder="Örn: Limit, Türev, Integral">
+                     placeholder="Örn: Matematik, Fizik, Türkçe">
               <div *ngIf="form.get('name')?.invalid && form.get('name')?.touched" 
                    class="mt-1 text-sm text-red-600">
-                Konu adı gereklidir (1-100 karakter)
+                Ad gereklidir (1-100 karakter)
               </div>
             </div>
 
@@ -99,15 +65,13 @@ import { ErrorMessageComponent } from '../../../../shared/components/error-messa
   `,
   styles: []
 })
-export class SubjectFormComponent implements OnInit {
+export class LessonFormComponent implements OnInit {
   form: FormGroup;
   isLoading = signal(true);
   isSubmitting = signal(false);
   isEditMode = signal(false);
   errorMessage = signal<string | null>(null);
-  lessons = signal<Lesson[]>([]);
-  examTypes = signal<ExamType[]>([]);
-  subjectId: string | null = null;
+  lessonId: string | null = null;
 
   constructor(
     private fb: FormBuilder,
@@ -116,69 +80,37 @@ export class SubjectFormComponent implements OnInit {
     private adminService: AdminService
   ) {
     this.form = this.fb.group({
-      lesson_id: ['', [Validators.required]],
-      exam_type_id: ['', [Validators.required]],
       name: ['', [Validators.required, Validators.minLength(1), Validators.maxLength(100)]]
     });
   }
 
   ngOnInit(): void {
-    this.loadLessons();
-    this.loadExamTypes();
     const id = this.route.snapshot.paramMap.get('id');
     if (id) {
       this.isEditMode.set(true);
-      this.subjectId = id;
-      this.loadSubject(id);
+      this.lessonId = id;
+      this.loadLesson(id);
     } else {
       this.isLoading.set(false);
     }
   }
 
-  loadLessons(): void {
-    this.adminService.listLessons().subscribe({
-      next: (response) => {
-        if (response.success && response.data) {
-          this.lessons.set(response.data);
-        }
-      },
-      error: () => {
-        this.errorMessage.set('Dersler yüklenemedi.');
-      }
-    });
-  }
-
-  loadExamTypes(): void {
-    this.adminService.listExamTypes().subscribe({
-      next: (response) => {
-        if (response.success && response.data) {
-          this.examTypes.set(response.data);
-        }
-      },
-      error: () => {
-        this.errorMessage.set('Sınav türleri yüklenemedi.');
-      }
-    });
-  }
-
-  loadSubject(id: string): void {
+  loadLesson(id: string): void {
     this.isLoading.set(true);
-    this.adminService.getSubject(id).subscribe({
+    this.adminService.getLesson(id).subscribe({
       next: (response) => {
         this.isLoading.set(false);
         if (response.success && response.data) {
           this.form.patchValue({
-            lesson_id: response.data.lesson_id,
-            exam_type_id: response.data.exam_type_id,
             name: response.data.name
           });
         } else {
-          this.errorMessage.set('Konu yüklenemedi.');
+          this.errorMessage.set('Ders yüklenemedi.');
         }
       },
       error: () => {
         this.isLoading.set(false);
-        this.errorMessage.set('Konu yüklenirken bir hata oluştu.');
+        this.errorMessage.set('Ders yüklenirken bir hata oluştu.');
       }
     });
   }
@@ -190,15 +122,13 @@ export class SubjectFormComponent implements OnInit {
 
       const formValue = this.form.value;
       
-      if (this.isEditMode() && this.subjectId) {
-        const request: UpdateSubjectRequest = {
-          name: formValue.name,
-          lesson_id: formValue.lesson_id,
-          exam_type_id: formValue.exam_type_id
+      if (this.isEditMode() && this.lessonId) {
+        const request: UpdateLessonRequest = {
+          name: formValue.name
         };
-        this.adminService.updateSubject(this.subjectId, request).subscribe({
+        this.adminService.updateLesson(this.lessonId, request).subscribe({
           next: () => {
-            this.router.navigate(['/admin/subjects']);
+            this.router.navigate(['/admin/lessons']);
           },
           error: (error) => {
             this.isSubmitting.set(false);
@@ -206,14 +136,12 @@ export class SubjectFormComponent implements OnInit {
           }
         });
       } else {
-        const request: CreateSubjectRequest = {
-          name: formValue.name,
-          lesson_id: formValue.lesson_id,
-          exam_type_id: formValue.exam_type_id
+        const request: CreateLessonRequest = {
+          name: formValue.name
         };
-        this.adminService.createSubject(request).subscribe({
+        this.adminService.createLesson(request).subscribe({
           next: () => {
-            this.router.navigate(['/admin/subjects']);
+            this.router.navigate(['/admin/lessons']);
           },
           error: (error) => {
             this.isSubmitting.set(false);
@@ -225,6 +153,7 @@ export class SubjectFormComponent implements OnInit {
   }
 
   goBack(): void {
-    this.router.navigate(['/admin/subjects']);
+    this.router.navigate(['/admin/lessons']);
   }
 }
+

@@ -3,6 +3,7 @@ import { Observable } from 'rxjs';
 import { ApiService } from '../../../core/services/api.service';
 import {
   ExamType,
+  Lesson,
   Subject,
   TestBook,
   PracticeTest,
@@ -22,9 +23,15 @@ export class TestService {
     return this.api.get<ExamType[]>('/exam-types');
   }
 
-  getSubjects(examTypeId?: string): Observable<ApiResponse<Subject[]>> {
-    const params = examTypeId ? { exam_type_id: examTypeId } : undefined;
-    return this.api.get<Subject[]>('/subjects', params);
+  getLessons(): Observable<ApiResponse<Lesson[]>> {
+    return this.api.get<Lesson[]>('/lessons');
+  }
+
+  getSubjects(examTypeId?: string, lessonId?: string): Observable<ApiResponse<Subject[]>> {
+    const params: Record<string, string> = {};
+    if (examTypeId) params['exam_type_id'] = examTypeId;
+    if (lessonId) params['lesson_id'] = lessonId;
+    return this.api.get<Subject[]>('/subjects', Object.keys(params).length ? params : undefined);
   }
 
   getTestBooks(subjectId?: string): Observable<ApiResponse<TestBook[]>> {
@@ -45,4 +52,3 @@ export class TestService {
     return this.api.post<SolveTestResponse>(`/tests/${testId}/solve`, request);
   }
 }
-

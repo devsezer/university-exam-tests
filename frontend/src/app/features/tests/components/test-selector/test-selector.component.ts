@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { TestService } from '../../services/test.service';
-import { ExamType, Subject, TestBook, PracticeTest } from '../../../../models/test.models';
+import { ExamType, Lesson, Subject, TestBook, PracticeTest } from '../../../../models/test.models';
 import { LoadingSpinnerComponent } from '../../../../shared/components/loading-spinner/loading-spinner.component';
 import { ErrorMessageComponent } from '../../../../shared/components/error-message/error-message.component';
 
@@ -31,14 +31,29 @@ import { ErrorMessageComponent } from '../../../../shared/components/error-messa
           </select>
         </div>
 
-        <!-- Subject Selection -->
+        <!-- Lesson Selection -->
         <div *ngIf="selectedExamTypeId">
-          <label class="block text-sm font-medium text-gray-700 mb-2">Ders Konusu</label>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Ders</label>
+          <select [(ngModel)]="selectedLessonId" 
+                  (change)="onLessonChange()"
+                  [disabled]="!selectedExamTypeId || isLoadingLessons()"
+                  class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm disabled:bg-gray-100">
+            <option [value]="null">Ders seçiniz</option>
+            <option *ngFor="let lesson of lessons()" [value]="lesson.id">
+              {{ lesson.name }}
+            </option>
+          </select>
+          <app-loading-spinner *ngIf="isLoadingLessons()"></app-loading-spinner>
+        </div>
+
+        <!-- Subject Selection -->
+        <div *ngIf="selectedLessonId">
+          <label class="block text-sm font-medium text-gray-700 mb-2">Konu</label>
           <select [(ngModel)]="selectedSubjectId" 
                   (change)="onSubjectChange()"
-                  [disabled]="!selectedExamTypeId || isLoadingSubjects()"
+                  [disabled]="!selectedLessonId || isLoadingSubjects()"
                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm disabled:bg-gray-100">
-            <option [value]="null">Ders konusu seçiniz</option>
+            <option [value]="null">Konu seçiniz</option>
             <option *ngFor="let subject of subjects()" [value]="subject.id">
               {{ subject.name }}
             </option>
@@ -90,15 +105,18 @@ import { ErrorMessageComponent } from '../../../../shared/components/error-messa
 })
 export class TestSelectorComponent {
   examTypes = signal<ExamType[]>([]);
+  lessons = signal<Lesson[]>([]);
   subjects = signal<Subject[]>([]);
   testBooks = signal<TestBook[]>([]);
   practiceTests = signal<PracticeTest[]>([]);
 
   selectedExamTypeId: string | null = null;
+  selectedLessonId: string | null = null;
   selectedSubjectId: string | null = null;
   selectedTestBookId: string | null = null;
   selectedPracticeTestId: string | null = null;
 
+  isLoadingLessons = signal(false);
   isLoadingSubjects = signal(false);
   isLoadingTestBooks = signal(false);
   isLoadingPracticeTests = signal(false);
@@ -125,6 +143,33 @@ export class TestSelectorComponent {
   }
 
   onExamTypeChange(): void {
+    this.selectedLessonId = null;
+    this.selectedSubjectId = null;
+    this.selectedTestBookId = null;
+    this.selectedPracticeTestId = null;
+    this.lessons.set([]);
+    this.subjects.set([]);
+    this.testBooks.set([]);
+    this.practiceTests.set([]);
+
+    if (this.selectedExamTypeId) {
+      this.isLoadingLessons.set(true);
+      this.testService.getLessons().subscribe({
+        next: (response) => {
+          this.isLoadingLessons.set(false);
+          if (response.success && response.data) {
+            this.lessons.set(response.data);
+          }
+        },
+        error: () => {
+          this.isLoadingLessons.set(false);
+          this.errorMessage.set('Dersler yüklenemedi.');
+        }
+      });
+    }
+  }
+
+  onLessonChange(): void {
     this.selectedSubjectId = null;
     this.selectedTestBookId = null;
     this.selectedPracticeTestId = null;
@@ -132,9 +177,9 @@ export class TestSelectorComponent {
     this.testBooks.set([]);
     this.practiceTests.set([]);
 
-    if (this.selectedExamTypeId) {
+    if (this.selectedLessonId && this.selectedExamTypeId) {
       this.isLoadingSubjects.set(true);
-      this.testService.getSubjects(this.selectedExamTypeId).subscribe({
+      this.testService.getSubjects(this.selectedExamTypeId, this.selectedLessonId).subscribe({
         next: (response) => {
           this.isLoadingSubjects.set(false);
           if (response.success && response.data) {
@@ -143,7 +188,7 @@ export class TestSelectorComponent {
         },
         error: () => {
           this.isLoadingSubjects.set(false);
-          this.errorMessage.set('Ders konuları yüklenemedi.');
+          this.errorMessage.set('Konular yüklenemedi.');
         }
       });
     }
@@ -199,4 +244,3 @@ export class TestSelectorComponent {
     }
   }
 }
-

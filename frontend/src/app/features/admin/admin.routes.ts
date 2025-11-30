@@ -2,6 +2,8 @@ import { Routes } from '@angular/router';
 import { AdminDashboardComponent } from './components/admin-dashboard/admin-dashboard.component';
 import { ExamTypesListComponent } from './components/exam-types/exam-types-list.component';
 import { ExamTypeFormComponent } from './components/exam-types/exam-type-form.component';
+import { LessonsListComponent } from './components/lessons/lessons-list.component';
+import { LessonFormComponent } from './components/lessons/lesson-form.component';
 import { SubjectsListComponent } from './components/subjects/subjects-list.component';
 import { SubjectFormComponent } from './components/subjects/subject-form.component';
 import { TestBooksListComponent } from './components/test-books/test-books-list.component';
@@ -18,6 +20,9 @@ export const adminRoutes: Routes = [
   { path: 'exam-types', component: ExamTypesListComponent },
   { path: 'exam-types/new', component: ExamTypeFormComponent },
   { path: 'exam-types/:id/edit', component: ExamTypeFormComponent },
+  { path: 'lessons', component: LessonsListComponent },
+  { path: 'lessons/new', component: LessonFormComponent },
+  { path: 'lessons/:id/edit', component: LessonFormComponent },
   { path: 'subjects', component: SubjectsListComponent },
   { path: 'subjects/new', component: SubjectFormComponent },
   { path: 'subjects/:id/edit', component: SubjectFormComponent },
@@ -32,4 +37,3 @@ export const adminRoutes: Routes = [
   { path: 'users/:id/edit', component: UserFormComponent },
   { path: 'roles', component: RolesListComponent },
 ];
-

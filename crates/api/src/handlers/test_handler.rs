@@ -540,19 +540,19 @@ pub async fn list_subjects(
         }
         // Only exam_type_id provided
         (None, Some(exam_type_id)) => {
-            state
-                .test_management_service
-                .list_subjects_by_exam_type(exam_type_id)
-                .await
-                .map_err(|e| handle_service_error("service_call", e))?
+        state
+            .test_management_service
+            .list_subjects_by_exam_type(exam_type_id)
+            .await
+            .map_err(|e| handle_service_error("service_call", e))?
         }
         // No filters or only lesson_id (list all in this case)
         _ => {
-            state
-                .test_management_service
-                .list_all_subjects()
-                .await
-                .map_err(|e| handle_service_error("service_call", e))?
+        state
+            .test_management_service
+            .list_all_subjects()
+            .await
+            .map_err(|e| handle_service_error("service_call", e))?
         }
     };
 

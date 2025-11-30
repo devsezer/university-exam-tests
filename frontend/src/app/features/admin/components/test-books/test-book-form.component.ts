@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { AdminService } from '../../services/admin.service';
-import { TestBook, ExamType, Subject, CreateTestBookRequest, UpdateTestBookRequest } from '../../../../models/test.models';
+import { TestBook, ExamType, Lesson, Subject, CreateTestBookRequest, UpdateTestBookRequest } from '../../../../models/test.models';
 import { LoadingSpinnerComponent } from '../../../../shared/components/loading-spinner/loading-spinner.component';
 import { ErrorMessageComponent } from '../../../../shared/components/error-message/error-message.component';
 
@@ -50,19 +50,37 @@ import { ErrorMessageComponent } from '../../../../shared/components/error-messa
             </div>
 
             <div>
-              <label for="subject_id" class="block text-sm font-medium text-gray-700">Ders Konusu *</label>
+              <label for="lesson_id" class="block text-sm font-medium text-gray-700">Ders *</label>
+              <select id="lesson_id" 
+                      formControlName="lesson_id"
+                      (change)="onLessonChange()"
+                      [disabled]="!form.get('exam_type_id')?.value"
+                      class="mt-1 block w-full px-4 py-3 rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm disabled:bg-gray-100">
+                <option [value]="null">Ders seçiniz</option>
+                <option *ngFor="let lesson of lessons()" [value]="lesson.id">
+                  {{ lesson.name }}
+                </option>
+              </select>
+              <div *ngIf="form.get('lesson_id')?.invalid && form.get('lesson_id')?.touched" 
+                   class="mt-1 text-sm text-red-600">
+                Ders seçilmelidir
+              </div>
+            </div>
+
+            <div>
+              <label for="subject_id" class="block text-sm font-medium text-gray-700">Konu *</label>
               <select id="subject_id" 
                       formControlName="subject_id"
-                      [disabled]="!form.get('exam_type_id')?.value || isLoadingSubjects()"
+                      [disabled]="!form.get('lesson_id')?.value || isLoadingSubjects()"
                       class="mt-1 block w-full px-4 py-3 rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm disabled:bg-gray-100">
-                <option [value]="null">Ders konusu seçiniz</option>
+                <option [value]="null">Konu seçiniz</option>
                 <option *ngFor="let subject of filteredSubjects()" [value]="subject.id">
                   {{ subject.name }}
                 </option>
               </select>
               <div *ngIf="form.get('subject_id')?.invalid && form.get('subject_id')?.touched" 
                    class="mt-1 text-sm text-red-600">
-                Ders konusu seçilmelidir
+                Konu seçilmelidir
               </div>
               <app-loading-spinner *ngIf="isLoadingSubjects()"></app-loading-spinner>
             </div>
@@ -122,11 +140,10 @@ export class TestBookFormComponent implements OnInit {
   isEditMode = signal(false);
   errorMessage = signal<string | null>(null);
   examTypes = signal<ExamType[]>([]);
-  subjects = signal<Subject[]>([]);
+  lessons = signal<Lesson[]>([]);
+  filteredSubjects = signal<Subject[]>([]);
   isLoadingSubjects = signal(false);
   testBookId: string | null = null;
-
-  filteredSubjects = signal<Subject[]>([]);
 
   constructor(
     private fb: FormBuilder,
@@ -136,24 +153,16 @@ export class TestBookFormComponent implements OnInit {
   ) {
     this.form = this.fb.group({
       exam_type_id: ['', [Validators.required]],
+      lesson_id: ['', [Validators.required]],
       subject_id: ['', [Validators.required]],
       name: ['', [Validators.required, Validators.minLength(1), Validators.maxLength(255)]],
       published_year: [new Date().getFullYear(), [Validators.required, Validators.min(2000), Validators.max(2100)]]
-    });
-
-    // Watch for exam_type_id changes
-    this.form.get('exam_type_id')?.valueChanges.subscribe(examTypeId => {
-      if (examTypeId) {
-        this.loadSubjectsForExamType(examTypeId);
-      } else {
-        this.filteredSubjects.set([]);
-        this.form.patchValue({ subject_id: null }, { emitEvent: false });
-      }
     });
   }
 
   ngOnInit(): void {
     this.loadExamTypes();
+    this.loadLessons();
     const id = this.route.snapshot.paramMap.get('id');
     if (id) {
       this.isEditMode.set(true);
@@ -177,9 +186,22 @@ export class TestBookFormComponent implements OnInit {
     });
   }
 
-  loadSubjectsForExamType(examTypeId: string): void {
+  loadLessons(): void {
+    this.adminService.listLessons().subscribe({
+      next: (response) => {
+        if (response.success && response.data) {
+          this.lessons.set(response.data);
+        }
+      },
+      error: () => {
+        this.errorMessage.set('Dersler yüklenemedi.');
+      }
+    });
+  }
+
+  loadSubjectsForLessonAndExamType(lessonId: string, examTypeId: string): void {
     this.isLoadingSubjects.set(true);
-    this.adminService.listSubjects(examTypeId).subscribe({
+    this.adminService.listSubjects(examTypeId, lessonId).subscribe({
       next: (response) => {
         this.isLoadingSubjects.set(false);
         if (response.success && response.data) {
@@ -188,18 +210,34 @@ export class TestBookFormComponent implements OnInit {
       },
       error: () => {
         this.isLoadingSubjects.set(false);
-        this.errorMessage.set('Ders konuları yüklenemedi.');
+        this.errorMessage.set('Konular yüklenemedi.');
       }
     });
   }
 
   onExamTypeChange(): void {
     const examTypeId = this.form.get('exam_type_id')?.value;
-    if (examTypeId) {
-      this.loadSubjectsForExamType(examTypeId);
-    } else {
-      this.filteredSubjects.set([]);
-      this.form.patchValue({ subject_id: null });
+    const lessonId = this.form.get('lesson_id')?.value;
+    
+    // Reset subject
+    this.form.patchValue({ subject_id: '' });
+    this.filteredSubjects.set([]);
+    
+    if (examTypeId && lessonId) {
+      this.loadSubjectsForLessonAndExamType(lessonId, examTypeId);
+    }
+  }
+
+  onLessonChange(): void {
+    const examTypeId = this.form.get('exam_type_id')?.value;
+    const lessonId = this.form.get('lesson_id')?.value;
+    
+    // Reset subject
+    this.form.patchValue({ subject_id: '' });
+    this.filteredSubjects.set([]);
+    
+    if (examTypeId && lessonId) {
+      this.loadSubjectsForLessonAndExamType(lessonId, examTypeId);
     }
   }
 
@@ -212,12 +250,15 @@ export class TestBookFormComponent implements OnInit {
           const testBook = response.data;
           this.form.patchValue({
             exam_type_id: testBook.exam_type_id,
+            lesson_id: testBook.lesson_id,
             subject_id: testBook.subject_id,
             name: testBook.name,
             published_year: testBook.published_year
           });
-          // Load subjects for the selected exam type
-          this.loadSubjectsForExamType(testBook.exam_type_id);
+          // Load subjects for the selected lesson and exam type
+          if (testBook.lesson_id && testBook.exam_type_id) {
+            this.loadSubjectsForLessonAndExamType(testBook.lesson_id, testBook.exam_type_id);
+          }
         } else {
           this.errorMessage.set('Test kitabı yüklenemedi.');
         }
@@ -240,6 +281,7 @@ export class TestBookFormComponent implements OnInit {
         const request: UpdateTestBookRequest = {
           name: formValue.name,
           exam_type_id: formValue.exam_type_id,
+          lesson_id: formValue.lesson_id,
           subject_id: formValue.subject_id,
           published_year: formValue.published_year
         };
@@ -256,6 +298,7 @@ export class TestBookFormComponent implements OnInit {
         const request: CreateTestBookRequest = {
           name: formValue.name,
           exam_type_id: formValue.exam_type_id,
+          lesson_id: formValue.lesson_id,
           subject_id: formValue.subject_id,
           published_year: formValue.published_year
         };
@@ -276,4 +319,3 @@ export class TestBookFormComponent implements OnInit {
     this.router.navigate(['/admin/test-books']);
   }
 }
-

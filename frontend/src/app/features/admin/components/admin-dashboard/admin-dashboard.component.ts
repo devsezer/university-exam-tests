@@ -73,8 +73,37 @@ import { RouterModule } from '@angular/router';
             </div>
           </div>
 
+          <!-- Lessons Card -->
+          <div class="card-hover bg-white overflow-hidden shadow-lg rounded-2xl border-2 border-transparent hover:border-teal-300 group animate-slide-up stagger-3">
+            <div class="p-6 bg-gradient-to-br from-teal-50 to-green-50">
+              <div class="flex items-center">
+                <div class="flex-shrink-0">
+                  <div class="p-3 rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 group-hover:scale-110 transition-transform duration-300 group-hover:animate-pulse-glow">
+                    <svg class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
+                  </div>
+                </div>
+                <div class="ml-5 w-0 flex-1">
+                  <dl>
+                    <dt class="text-sm font-semibold text-gray-600 uppercase tracking-wide">Dersler</dt>
+                    <dd class="text-xl font-bold text-gray-900 mt-1">Yönet</dd>
+                  </dl>
+                </div>
+              </div>
+            </div>
+            <div class="bg-gradient-to-r from-teal-50 to-green-50 px-6 py-4 border-t border-teal-100">
+              <div class="text-sm">
+                <a routerLink="/admin/lessons" class="font-semibold text-teal-700 hover:text-teal-900 inline-flex items-center gap-2 group-hover:gap-3 transition-all duration-200">
+                  Yönetmek için tıklayın 
+                  <span class="group-hover:translate-x-1 transition-transform duration-200" aria-hidden="true">&rarr;</span>
+                </a>
+              </div>
+            </div>
+          </div>
+
           <!-- Subjects Card -->
-          <div class="card-hover bg-white overflow-hidden shadow-lg rounded-2xl border-2 border-transparent hover:border-success-300 group animate-slide-up stagger-3">
+          <div class="card-hover bg-white overflow-hidden shadow-lg rounded-2xl border-2 border-transparent hover:border-success-300 group animate-slide-up stagger-4">
             <div class="p-6 bg-gradient-to-br from-success-50 to-emerald-50">
               <div class="flex items-center">
                 <div class="flex-shrink-0">
@@ -103,7 +132,7 @@ import { RouterModule } from '@angular/router';
           </div>
 
           <!-- Test Books Card -->
-          <div class="card-hover bg-white overflow-hidden shadow-lg rounded-2xl border-2 border-transparent hover:border-warning-300 group animate-slide-up stagger-4">
+          <div class="card-hover bg-white overflow-hidden shadow-lg rounded-2xl border-2 border-transparent hover:border-warning-300 group animate-slide-up stagger-5">
             <div class="p-6 bg-gradient-to-br from-warning-50 to-amber-50">
               <div class="flex items-center">
                 <div class="flex-shrink-0">
@@ -132,7 +161,7 @@ import { RouterModule } from '@angular/router';
           </div>
 
           <!-- Practice Tests Card -->
-          <div class="card-hover bg-white overflow-hidden shadow-lg rounded-2xl border-2 border-transparent hover:border-danger-300 group animate-slide-up stagger-5">
+          <div class="card-hover bg-white overflow-hidden shadow-lg rounded-2xl border-2 border-transparent hover:border-danger-300 group animate-slide-up stagger-6">
             <div class="p-6 bg-gradient-to-br from-danger-50 to-rose-50">
               <div class="flex items-center">
                 <div class="flex-shrink-0">
@@ -161,7 +190,7 @@ import { RouterModule } from '@angular/router';
           </div>
 
           <!-- Roles Card -->
-          <div class="card-hover bg-white overflow-hidden shadow-lg rounded-2xl border-2 border-transparent hover:border-primary-400 group animate-slide-up stagger-6">
+          <div class="card-hover bg-white overflow-hidden shadow-lg rounded-2xl border-2 border-transparent hover:border-primary-400 group animate-slide-up stagger-7">
             <div class="p-6 bg-gradient-to-br from-primary-50 via-indigo-50 to-purple-50">
               <div class="flex items-center">
                 <div class="flex-shrink-0">

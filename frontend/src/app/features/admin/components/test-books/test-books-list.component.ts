@@ -2,7 +2,7 @@ import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { AdminService } from '../../services/admin.service';
-import { TestBook, ExamType, Subject } from '../../../../models/test.models';
+import { TestBook, ExamType, Subject, Lesson } from '../../../../models/test.models';
 import { LoadingSpinnerComponent } from '../../../../shared/components/loading-spinner/loading-spinner.component';
 import { ErrorMessageComponent } from '../../../../shared/components/error-message/error-message.component';
 import { DeleteConfirmationComponent } from '../../../../shared/components/delete-confirmation/delete-confirmation.component';
@@ -47,7 +47,16 @@ import { DeleteConfirmationComponent } from '../../../../shared/components/delet
                   <div class="ml-4">
                     <div class="text-sm font-medium text-gray-900">{{ testBook.name }}</div>
                     <div class="text-sm text-gray-500">
-                      {{ getExamTypeName(testBook.exam_type_id) }} - {{ getSubjectName(testBook.subject_id) }} ({{ testBook.published_year }})
+                      <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 mr-1">
+                        {{ getExamTypeName(testBook.exam_type_id) }}
+                      </span>
+                      <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 mr-1">
+                        {{ getLessonName(testBook.lesson_id) }}
+                      </span>
+                      <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 mr-1">
+                        {{ getSubjectName(testBook.subject_id) }}
+                      </span>
+                      <span class="text-gray-400">({{ testBook.published_year }})</span>
                     </div>
                   </div>
                 </div>
@@ -98,6 +107,7 @@ export class TestBooksListComponent implements OnInit {
   testBooks = signal<TestBook[]>([]);
   examTypes = signal<ExamType[]>([]);
   subjects = signal<Subject[]>([]);
+  lessons = signal<Lesson[]>([]);
   isLoading = signal(true);
   errorMessage = signal<string | null>(null);
   showDeleteDialog = signal(false);
@@ -116,7 +126,6 @@ export class TestBooksListComponent implements OnInit {
     this.adminService.listTestBooks().subscribe({
       next: (response) => {
         if (response.success) {
-          // Ensure data is an array, even if empty
           this.testBooks.set(Array.isArray(response.data) ? response.data : []);
         } else {
           this.testBooks.set([]);
@@ -138,11 +147,24 @@ export class TestBooksListComponent implements OnInit {
         if (response.success && response.data) {
           this.examTypes.set(Array.isArray(response.data) ? response.data : []);
         }
+        this.loadLessons();
+      },
+      error: () => {
+        this.loadLessons();
+      }
+    });
+  }
+
+  loadLessons(): void {
+    this.adminService.listLessons().subscribe({
+      next: (response) => {
+        if (response.success && response.data) {
+          this.lessons.set(Array.isArray(response.data) ? response.data : []);
+        }
         this.loadSubjects();
       },
       error: () => {
-        this.isLoading.set(false);
-        this.loadSubjects(); // Continue loading subjects even if exam types fail
+        this.loadSubjects();
       }
     });
   }
@@ -163,12 +185,17 @@ export class TestBooksListComponent implements OnInit {
 
   getExamTypeName(examTypeId: string): string {
     const examType = this.examTypes().find(et => et.id === examTypeId);
-    return examType?.name || examTypeId.substring(0, 8);
+    return examType?.name || 'Bilinmiyor';
+  }
+
+  getLessonName(lessonId: string): string {
+    const lesson = this.lessons().find(l => l.id === lessonId);
+    return lesson?.name || 'Bilinmiyor';
   }
 
   getSubjectName(subjectId: string): string {
     const subject = this.subjects().find(s => s.id === subjectId);
-    return subject?.name || subjectId.substring(0, 8);
+    return subject?.name || 'Bilinmiyor';
   }
 
   confirmDelete(testBook: TestBook): void {
@@ -199,4 +226,3 @@ export class TestBooksListComponent implements OnInit {
     });
   }
 }
-
