@@ -1,4 +1,5 @@
 mod exam_type;
+mod lesson;
 mod practice_test;
 mod refresh_token;
 mod role;
@@ -8,6 +9,7 @@ mod test_result;
 mod user;
 
 pub use exam_type::ExamType;
+pub use lesson::Lesson;
 pub use practice_test::PracticeTest;
 pub use refresh_token::RefreshToken;
 pub use role::Role;

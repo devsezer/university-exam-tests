@@ -9,6 +9,8 @@ pub struct TestBook {
     pub id: Uuid,
     /// Name of the test book
     pub name: String,
+    /// ID of the lesson this test book belongs to
+    pub lesson_id: Uuid,
     /// ID of the exam type this test book belongs to
     pub exam_type_id: Uuid,
     /// ID of the subject this test book belongs to
@@ -23,6 +25,7 @@ impl TestBook {
     /// Creates a new test book with the given details.
     pub fn new(
         name: String,
+        lesson_id: Uuid,
         exam_type_id: Uuid,
         subject_id: Uuid,
         published_year: u16,
@@ -30,6 +33,7 @@ impl TestBook {
         Self {
             id: Uuid::new_v4(),
             name,
+            lesson_id,
             exam_type_id,
             subject_id,
             published_year,

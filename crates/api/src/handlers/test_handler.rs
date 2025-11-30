@@ -8,13 +8,13 @@ use validator::Validate;
 use tracing::error;
 
 use crate::dto::request::{
-    CreateExamTypeRequest, CreatePracticeTestRequest, CreateSubjectRequest, CreateTestBookRequest,
-    SolveTestRequest, UpdateExamTypeRequest, UpdatePracticeTestRequest, UpdateSubjectRequest,
-    UpdateTestBookRequest,
+    CreateExamTypeRequest, CreateLessonRequest, CreatePracticeTestRequest, CreateSubjectRequest,
+    CreateTestBookRequest, SolveTestRequest, UpdateExamTypeRequest, UpdateLessonRequest,
+    UpdatePracticeTestRequest, UpdateSubjectRequest, UpdateTestBookRequest,
 };
 use crate::dto::response::{
-    ApiResponse, ExamTypeResponse, MessageResponse, PaginatedResponse, PracticeTestResponse,
-    SolveTestResponse, SubjectResponse, TestBookResponse, TestResultResponse,
+    ApiResponse, ExamTypeResponse, LessonResponse, MessageResponse, PaginatedResponse,
+    PracticeTestResponse, SolveTestResponse, SubjectResponse, TestBookResponse, TestResultResponse,
 };
 use crate::errors::AppError;
 use crate::extractors::{CurrentUser, RequireAdmin};
@@ -24,6 +24,209 @@ use crate::state::AppState;
 fn handle_service_error<E: std::fmt::Debug + Into<AppError>>(operation: &str, e: E) -> AppError {
     error!(operation = operation, "Service error: {:?}", e);
     e.into()
+}
+
+// Lesson Handlers
+
+/// Create a new lesson (Admin only)
+#[utoipa::path(
+    post,
+    path = "/api/v1/admin/lessons",
+    request_body = CreateLessonRequest,
+    responses(
+        (status = 201, description = "Lesson created successfully", body = ApiResponse<LessonResponse>),
+        (status = 400, description = "Validation error"),
+        (status = 401, description = "Unauthorized"),
+        (status = 403, description = "Forbidden - Admin access required"),
+    ),
+    security(
+        ("bearer_auth" = [])
+    ),
+    tag = "admin"
+)]
+pub async fn create_lesson(
+    State(state): State<AppState>,
+    _admin: RequireAdmin,
+    Json(request): Json<CreateLessonRequest>,
+) -> Result<(StatusCode, Json<ApiResponse<LessonResponse>>), AppError> {
+    request.validate().map_err(|e| AppError::ValidationError(e.to_string()))?;
+
+    let result = state
+        .test_management_service
+        .create_lesson(request.into_app_request())
+        .await
+        .map_err(|e| handle_service_error("create_lesson", e))?;
+
+    Ok((
+        StatusCode::CREATED,
+        Json(ApiResponse::success_with_message(
+            result.into(),
+            "Lesson created successfully",
+        )),
+    ))
+}
+
+/// Get lesson by ID (Admin only)
+#[utoipa::path(
+    get,
+    path = "/api/v1/admin/lessons/{id}",
+    params(("id" = Uuid, Path, description = "Lesson ID")),
+    responses(
+        (status = 200, description = "Lesson retrieved", body = ApiResponse<LessonResponse>),
+        (status = 401, description = "Unauthorized"),
+        (status = 403, description = "Forbidden - Admin access required"),
+        (status = 404, description = "Lesson not found"),
+    ),
+    security(
+        ("bearer_auth" = [])
+    ),
+    tag = "admin"
+)]
+pub async fn get_lesson(
+    State(state): State<AppState>,
+    _admin: RequireAdmin,
+    Path(id): Path<Uuid>,
+) -> Result<Json<ApiResponse<LessonResponse>>, AppError> {
+    let result = state
+        .test_management_service
+        .get_lesson(id)
+        .await
+        .map_err(|e| {
+            error!(lesson_id = ?id, "Failed to get lesson: {:?}", e);
+            AppError::from(e)
+        })?;
+
+    Ok(Json(ApiResponse::success(result.into())))
+}
+
+/// List all lessons (Public)
+#[utoipa::path(
+    get,
+    path = "/api/v1/lessons",
+    responses(
+        (status = 200, description = "Lessons retrieved", body = ApiResponse<Vec<LessonResponse>>),
+    ),
+    tag = "tests"
+)]
+pub async fn list_lessons(
+    State(state): State<AppState>,
+) -> Result<Json<ApiResponse<Vec<LessonResponse>>>, AppError> {
+    let results = state
+        .test_management_service
+        .list_lessons()
+        .await
+        .map_err(|e| handle_service_error("list_lessons", e))?;
+
+    Ok(Json(ApiResponse::success(
+        results.into_iter().map(|r| r.into()).collect(),
+    )))
+}
+
+/// List all lessons (Admin only)
+#[utoipa::path(
+    get,
+    path = "/api/v1/admin/lessons",
+    responses(
+        (status = 200, description = "Lessons retrieved", body = ApiResponse<Vec<LessonResponse>>),
+        (status = 401, description = "Unauthorized"),
+        (status = 403, description = "Forbidden - Admin access required"),
+    ),
+    security(
+        ("bearer_auth" = [])
+    ),
+    tag = "admin"
+)]
+pub async fn list_admin_lessons(
+    State(state): State<AppState>,
+    _admin: RequireAdmin,
+) -> Result<Json<ApiResponse<Vec<LessonResponse>>>, AppError> {
+    let results = state
+        .test_management_service
+        .list_lessons()
+        .await
+        .map_err(|e| handle_service_error("list_admin_lessons", e))?;
+
+    Ok(Json(ApiResponse::success(
+        results.into_iter().map(|r| r.into()).collect(),
+    )))
+}
+
+/// Update lesson (Admin only)
+#[utoipa::path(
+    put,
+    path = "/api/v1/admin/lessons/{id}",
+    params(("id" = Uuid, Path, description = "Lesson ID")),
+    request_body = UpdateLessonRequest,
+    responses(
+        (status = 200, description = "Lesson updated", body = ApiResponse<LessonResponse>),
+        (status = 401, description = "Unauthorized"),
+        (status = 403, description = "Forbidden - Admin access required"),
+        (status = 404, description = "Lesson not found"),
+    ),
+    security(
+        ("bearer_auth" = [])
+    ),
+    tag = "admin"
+)]
+pub async fn update_lesson(
+    State(state): State<AppState>,
+    _admin: RequireAdmin,
+    Path(id): Path<Uuid>,
+    Json(request): Json<UpdateLessonRequest>,
+) -> Result<Json<ApiResponse<LessonResponse>>, AppError> {
+    request.validate().map_err(|e| AppError::ValidationError(e.to_string()))?;
+
+    let result = state
+        .test_management_service
+        .update_lesson(id, request.into_app_request())
+        .await
+        .map_err(|e| {
+            error!(lesson_id = ?id, "Failed to update lesson: {:?}", e);
+            AppError::from(e)
+        })?;
+
+    Ok(Json(ApiResponse::success_with_message(
+        result.into(),
+        "Lesson updated successfully",
+    )))
+}
+
+/// Delete lesson (Admin only)
+#[utoipa::path(
+    delete,
+    path = "/api/v1/admin/lessons/{id}",
+    params(("id" = Uuid, Path, description = "Lesson ID")),
+    responses(
+        (status = 200, description = "Lesson deleted", body = ApiResponse<MessageResponse>),
+        (status = 401, description = "Unauthorized"),
+        (status = 403, description = "Forbidden - Admin access required"),
+        (status = 404, description = "Lesson not found"),
+    ),
+    security(
+        ("bearer_auth" = [])
+    ),
+    tag = "admin"
+)]
+pub async fn delete_lesson(
+    State(state): State<AppState>,
+    _admin: RequireAdmin,
+    Path(id): Path<Uuid>,
+) -> Result<Json<ApiResponse<MessageResponse>>, AppError> {
+    state
+        .test_management_service
+        .delete_lesson(id)
+        .await
+        .map_err(|e| {
+            error!(lesson_id = ?id, "Failed to delete lesson: {:?}", e);
+            AppError::from(e)
+        })?;
+
+    Ok(Json(ApiResponse::success_with_message(
+        MessageResponse {
+            message: "Lesson deleted successfully".to_string(),
+        },
+        "Lesson deleted successfully",
+    )))
 }
 
 // ExamType Handlers
@@ -116,6 +319,35 @@ pub async fn list_exam_types(
         .list_exam_types()
         .await
         .map_err(|e| handle_service_error("list_exam_types", e))?;
+
+    Ok(Json(ApiResponse::success(
+        results.into_iter().map(|r| r.into()).collect(),
+    )))
+}
+
+/// List all exam types (Admin only)
+#[utoipa::path(
+    get,
+    path = "/api/v1/admin/exam-types",
+    responses(
+        (status = 200, description = "Exam types retrieved", body = ApiResponse<Vec<ExamTypeResponse>>),
+        (status = 401, description = "Unauthorized"),
+        (status = 403, description = "Forbidden - Admin access required"),
+    ),
+    security(
+        ("bearer_auth" = [])
+    ),
+    tag = "admin"
+)]
+pub async fn list_admin_exam_types(
+    State(state): State<AppState>,
+    _admin: RequireAdmin,
+) -> Result<Json<ApiResponse<Vec<ExamTypeResponse>>>, AppError> {
+    let results = state
+        .test_management_service
+        .list_exam_types()
+        .await
+        .map_err(|e| handle_service_error("list_admin_exam_types", e))?;
 
     Ok(Json(ApiResponse::success(
         results.into_iter().map(|r| r.into()).collect(),
@@ -273,11 +505,14 @@ pub async fn get_subject(
     Ok(Json(ApiResponse::success(result.into())))
 }
 
-/// List subjects by exam type
+/// List subjects with optional filters
 #[utoipa::path(
     get,
     path = "/api/v1/subjects",
-    params(("exam_type_id" = Option<Uuid>, Query, description = "Filter by exam type ID")),
+    params(
+        ("exam_type_id" = Option<Uuid>, Query, description = "Filter by exam type ID"),
+        ("lesson_id" = Option<Uuid>, Query, description = "Filter by lesson ID (requires exam_type_id)")
+    ),
     responses(
         (status = 200, description = "Subjects retrieved", body = ApiResponse<Vec<SubjectResponse>>),
     ),
@@ -290,19 +525,94 @@ pub async fn list_subjects(
     let exam_type_id = params
         .get("exam_type_id")
         .and_then(|s| Uuid::parse_str(s).ok());
+    let lesson_id = params
+        .get("lesson_id")
+        .and_then(|s| Uuid::parse_str(s).ok());
 
-    let results = if let Some(exam_type_id) = exam_type_id {
-        state
-            .test_management_service
-            .list_subjects_by_exam_type(exam_type_id)
-            .await
-            .map_err(|e| handle_service_error("service_call", e))?
-    } else {
-        state
-            .test_management_service
-            .list_all_subjects()
-            .await
-            .map_err(|e| handle_service_error("service_call", e))?
+    let results = match (lesson_id, exam_type_id) {
+        // Both lesson_id and exam_type_id provided - use cascading filter
+        (Some(lesson_id), Some(exam_type_id)) => {
+            state
+                .test_management_service
+                .list_subjects_by_lesson_and_exam_type(lesson_id, exam_type_id)
+                .await
+                .map_err(|e| handle_service_error("service_call", e))?
+        }
+        // Only exam_type_id provided
+        (None, Some(exam_type_id)) => {
+            state
+                .test_management_service
+                .list_subjects_by_exam_type(exam_type_id)
+                .await
+                .map_err(|e| handle_service_error("service_call", e))?
+        }
+        // No filters or only lesson_id (list all in this case)
+        _ => {
+            state
+                .test_management_service
+                .list_all_subjects()
+                .await
+                .map_err(|e| handle_service_error("service_call", e))?
+        }
+    };
+
+    Ok(Json(ApiResponse::success(
+        results.into_iter().map(|r| r.into()).collect(),
+    )))
+}
+
+/// List all subjects (Admin only)
+#[utoipa::path(
+    get,
+    path = "/api/v1/admin/subjects",
+    params(
+        ("exam_type_id" = Option<Uuid>, Query, description = "Filter by exam type ID"),
+        ("lesson_id" = Option<Uuid>, Query, description = "Filter by lesson ID (requires exam_type_id)")
+    ),
+    responses(
+        (status = 200, description = "Subjects retrieved", body = ApiResponse<Vec<SubjectResponse>>),
+        (status = 401, description = "Unauthorized"),
+        (status = 403, description = "Forbidden - Admin access required"),
+    ),
+    security(
+        ("bearer_auth" = [])
+    ),
+    tag = "admin"
+)]
+pub async fn list_admin_subjects(
+    State(state): State<AppState>,
+    _admin: RequireAdmin,
+    Query(params): Query<std::collections::HashMap<String, String>>,
+) -> Result<Json<ApiResponse<Vec<SubjectResponse>>>, AppError> {
+    let exam_type_id = params
+        .get("exam_type_id")
+        .and_then(|s| Uuid::parse_str(s).ok());
+    let lesson_id = params
+        .get("lesson_id")
+        .and_then(|s| Uuid::parse_str(s).ok());
+
+    let results = match (lesson_id, exam_type_id) {
+        (Some(lesson_id), Some(exam_type_id)) => {
+            state
+                .test_management_service
+                .list_subjects_by_lesson_and_exam_type(lesson_id, exam_type_id)
+                .await
+                .map_err(|e| handle_service_error("list_admin_subjects", e))?
+        }
+        (None, Some(exam_type_id)) => {
+            state
+                .test_management_service
+                .list_subjects_by_exam_type(exam_type_id)
+                .await
+                .map_err(|e| handle_service_error("list_admin_subjects", e))?
+        }
+        _ => {
+            state
+                .test_management_service
+                .list_all_subjects()
+                .await
+                .map_err(|e| handle_service_error("list_admin_subjects", e))?
+        }
     };
 
     Ok(Json(ApiResponse::success(
@@ -489,6 +799,49 @@ pub async fn list_test_books(
     )))
 }
 
+/// List all test books (Admin only)
+#[utoipa::path(
+    get,
+    path = "/api/v1/admin/test-books",
+    params(("subject_id" = Option<Uuid>, Query, description = "Filter by subject ID")),
+    responses(
+        (status = 200, description = "Test books retrieved", body = ApiResponse<Vec<TestBookResponse>>),
+        (status = 401, description = "Unauthorized"),
+        (status = 403, description = "Forbidden - Admin access required"),
+    ),
+    security(
+        ("bearer_auth" = [])
+    ),
+    tag = "admin"
+)]
+pub async fn list_admin_test_books(
+    State(state): State<AppState>,
+    _admin: RequireAdmin,
+    Query(params): Query<std::collections::HashMap<String, String>>,
+) -> Result<Json<ApiResponse<Vec<TestBookResponse>>>, AppError> {
+    let subject_id = params
+        .get("subject_id")
+        .and_then(|s| Uuid::parse_str(s).ok());
+
+    let results = if let Some(subject_id) = subject_id {
+        state
+            .test_management_service
+            .list_test_books_by_subject(subject_id)
+            .await
+            .map_err(|e| handle_service_error("list_admin_test_books", e))?
+    } else {
+        state
+            .test_management_service
+            .list_all_test_books()
+            .await
+            .map_err(|e| handle_service_error("list_admin_test_books", e))?
+    };
+
+    Ok(Json(ApiResponse::success(
+        results.into_iter().map(|r| r.into()).collect(),
+    )))
+}
+
 /// Update test book (Admin only)
 #[utoipa::path(
     put,
@@ -661,6 +1014,49 @@ pub async fn list_practice_tests(
             .list_all_practice_tests()
             .await
             .map_err(|e| handle_service_error("service_call", e))?
+    };
+
+    Ok(Json(ApiResponse::success(
+        results.into_iter().map(|r| r.into()).collect(),
+    )))
+}
+
+/// List all practice tests (Admin only)
+#[utoipa::path(
+    get,
+    path = "/api/v1/admin/practice-tests",
+    params(("test_book_id" = Option<Uuid>, Query, description = "Filter by test book ID")),
+    responses(
+        (status = 200, description = "Practice tests retrieved", body = ApiResponse<Vec<PracticeTestResponse>>),
+        (status = 401, description = "Unauthorized"),
+        (status = 403, description = "Forbidden - Admin access required"),
+    ),
+    security(
+        ("bearer_auth" = [])
+    ),
+    tag = "admin"
+)]
+pub async fn list_admin_practice_tests(
+    State(state): State<AppState>,
+    _admin: RequireAdmin,
+    Query(params): Query<std::collections::HashMap<String, String>>,
+) -> Result<Json<ApiResponse<Vec<PracticeTestResponse>>>, AppError> {
+    let test_book_id = params
+        .get("test_book_id")
+        .and_then(|s| Uuid::parse_str(s).ok());
+
+    let results = if let Some(test_book_id) = test_book_id {
+        state
+            .test_management_service
+            .list_practice_tests_by_test_book(test_book_id)
+            .await
+            .map_err(|e| handle_service_error("list_admin_practice_tests", e))?
+    } else {
+        state
+            .test_management_service
+            .list_all_practice_tests()
+            .await
+            .map_err(|e| handle_service_error("list_admin_practice_tests", e))?
     };
 
     Ok(Json(ApiResponse::success(

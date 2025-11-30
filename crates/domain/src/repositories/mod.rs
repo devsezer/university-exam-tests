@@ -1,4 +1,5 @@
 mod exam_type_repository;
+mod lesson_repository;
 mod practice_test_repository;
 mod refresh_token_repository;
 mod role_repository;
@@ -8,6 +9,7 @@ mod test_result_repository;
 mod user_repository;
 
 pub use exam_type_repository::ExamTypeRepository;
+pub use lesson_repository::LessonRepository;
 pub use practice_test_repository::PracticeTestRepository;
 pub use refresh_token_repository::RefreshTokenRepository;
 pub use role_repository::RoleRepository;

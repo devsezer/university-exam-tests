@@ -2,21 +2,26 @@ use async_trait::async_trait;
 use std::sync::Arc;
 use uuid::Uuid;
 
-use domain::entities::{ExamType, PracticeTest, Subject, TestBook};
+use domain::entities::{ExamType, Lesson, PracticeTest, Subject, TestBook};
 use domain::errors::DomainError;
 use domain::repositories::{
-    ExamTypeRepository, PracticeTestRepository, SubjectRepository, TestBookRepository,
+    ExamTypeRepository, LessonRepository, PracticeTestRepository, SubjectRepository,
+    TestBookRepository,
 };
 
 use crate::dto::{
-    CreateExamTypeRequest, CreatePracticeTestRequest, CreateSubjectRequest, CreateTestBookRequest,
-    ExamTypeResponse, PracticeTestResponse, SubjectResponse, TestBookResponse,
-    UpdateExamTypeRequest, UpdatePracticeTestRequest, UpdateSubjectRequest, UpdateTestBookRequest,
+    CreateExamTypeRequest, CreateLessonRequest, CreatePracticeTestRequest, CreateSubjectRequest,
+    CreateTestBookRequest, ExamTypeResponse, LessonResponse, PracticeTestResponse, SubjectResponse,
+    TestBookResponse, UpdateExamTypeRequest, UpdateLessonRequest, UpdatePracticeTestRequest,
+    UpdateSubjectRequest, UpdateTestBookRequest,
 };
 
 /// Errors for test management operations.
 #[derive(Debug, thiserror::Error)]
 pub enum TestManagementError {
+    #[error("Lesson not found")]
+    LessonNotFound,
+
     #[error("Exam type not found")]
     ExamTypeNotFound,
 
@@ -28,6 +33,9 @@ pub enum TestManagementError {
 
     #[error("Practice test not found")]
     PracticeTestNotFound,
+
+    #[error("Duplicate lesson name")]
+    DuplicateLessonName,
 
     #[error("Duplicate exam type name")]
     DuplicateExamTypeName,
@@ -51,6 +59,20 @@ impl From<DomainError> for TestManagementError {
 /// Trait for test management operations.
 #[async_trait]
 pub trait TestManagementService: Send + Sync {
+    // Lesson operations
+    async fn create_lesson(
+        &self,
+        request: CreateLessonRequest,
+    ) -> Result<LessonResponse, TestManagementError>;
+    async fn get_lesson(&self, id: Uuid) -> Result<LessonResponse, TestManagementError>;
+    async fn list_lessons(&self) -> Result<Vec<LessonResponse>, TestManagementError>;
+    async fn update_lesson(
+        &self,
+        id: Uuid,
+        request: UpdateLessonRequest,
+    ) -> Result<LessonResponse, TestManagementError>;
+    async fn delete_lesson(&self, id: Uuid) -> Result<(), TestManagementError>;
+
     // ExamType operations
     async fn create_exam_type(
         &self,
@@ -73,6 +95,11 @@ pub trait TestManagementService: Send + Sync {
     async fn get_subject(&self, id: Uuid) -> Result<SubjectResponse, TestManagementError>;
     async fn list_subjects_by_exam_type(
         &self,
+        exam_type_id: Uuid,
+    ) -> Result<Vec<SubjectResponse>, TestManagementError>;
+    async fn list_subjects_by_lesson_and_exam_type(
+        &self,
+        lesson_id: Uuid,
         exam_type_id: Uuid,
     ) -> Result<Vec<SubjectResponse>, TestManagementError>;
     async fn list_all_subjects(&self) -> Result<Vec<SubjectResponse>, TestManagementError>;
@@ -121,33 +148,38 @@ pub trait TestManagementService: Send + Sync {
 }
 
 /// Implementation of TestManagementService.
-pub struct TestManagementServiceImpl<E, S, T, P>
+pub struct TestManagementServiceImpl<L, E, S, T, P>
 where
+    L: LessonRepository,
     E: ExamTypeRepository,
     S: SubjectRepository,
     T: TestBookRepository,
     P: PracticeTestRepository,
 {
+    lesson_repo: Arc<L>,
     exam_type_repo: Arc<E>,
     subject_repo: Arc<S>,
     test_book_repo: Arc<T>,
     practice_test_repo: Arc<P>,
 }
 
-impl<E, S, T, P> TestManagementServiceImpl<E, S, T, P>
+impl<L, E, S, T, P> TestManagementServiceImpl<L, E, S, T, P>
 where
+    L: LessonRepository,
     E: ExamTypeRepository,
     S: SubjectRepository,
     T: TestBookRepository,
     P: PracticeTestRepository,
 {
     pub fn new(
+        lesson_repo: Arc<L>,
         exam_type_repo: Arc<E>,
         subject_repo: Arc<S>,
         test_book_repo: Arc<T>,
         practice_test_repo: Arc<P>,
     ) -> Self {
         Self {
+            lesson_repo,
             exam_type_repo,
             subject_repo,
             test_book_repo,
@@ -157,13 +189,94 @@ where
 }
 
 #[async_trait]
-impl<E, S, T, P> TestManagementService for TestManagementServiceImpl<E, S, T, P>
+impl<L, E, S, T, P> TestManagementService for TestManagementServiceImpl<L, E, S, T, P>
 where
+    L: LessonRepository + 'static,
     E: ExamTypeRepository + 'static,
     S: SubjectRepository + 'static,
     T: TestBookRepository + 'static,
     P: PracticeTestRepository + 'static,
 {
+    // Lesson operations
+    async fn create_lesson(
+        &self,
+        request: CreateLessonRequest,
+    ) -> Result<LessonResponse, TestManagementError> {
+        // Check for duplicate name
+        if self.lesson_repo.find_by_name(&request.name).await?.is_some() {
+            return Err(TestManagementError::DuplicateLessonName);
+        }
+
+        let lesson = Lesson::new(request.name);
+        let created = self.lesson_repo.create(&lesson).await?;
+
+        Ok(LessonResponse {
+            id: created.id,
+            name: created.name,
+            created_at: created.created_at,
+        })
+    }
+
+    async fn get_lesson(&self, id: Uuid) -> Result<LessonResponse, TestManagementError> {
+        let lesson = self
+            .lesson_repo
+            .find_by_id(id)
+            .await?
+            .ok_or(TestManagementError::LessonNotFound)?;
+
+        Ok(LessonResponse {
+            id: lesson.id,
+            name: lesson.name,
+            created_at: lesson.created_at,
+        })
+    }
+
+    async fn list_lessons(&self) -> Result<Vec<LessonResponse>, TestManagementError> {
+        let lessons = self.lesson_repo.list_all().await?;
+
+        Ok(lessons
+            .into_iter()
+            .map(|l| LessonResponse {
+                id: l.id,
+                name: l.name,
+                created_at: l.created_at,
+            })
+            .collect())
+    }
+
+    async fn update_lesson(
+        &self,
+        id: Uuid,
+        request: UpdateLessonRequest,
+    ) -> Result<LessonResponse, TestManagementError> {
+        let mut lesson = self
+            .lesson_repo
+            .find_by_id(id)
+            .await?
+            .ok_or(TestManagementError::LessonNotFound)?;
+
+        if let Some(name) = request.name {
+            lesson.name = name;
+        }
+
+        let updated = self.lesson_repo.update(&lesson).await?;
+
+        Ok(LessonResponse {
+            id: updated.id,
+            name: updated.name,
+            created_at: updated.created_at,
+        })
+    }
+
+    async fn delete_lesson(&self, id: Uuid) -> Result<(), TestManagementError> {
+        self.lesson_repo
+            .delete(id)
+            .await
+            .map_err(|_| TestManagementError::LessonNotFound)?;
+        Ok(())
+    }
+
+    // ExamType operations
     async fn create_exam_type(
         &self,
         request: CreateExamTypeRequest,
@@ -253,18 +366,25 @@ where
         &self,
         request: CreateSubjectRequest,
     ) -> Result<SubjectResponse, TestManagementError> {
+        // Verify lesson exists
+        self.lesson_repo
+            .find_by_id(request.lesson_id)
+            .await?
+            .ok_or(TestManagementError::LessonNotFound)?;
+
         // Verify exam type exists
         self.exam_type_repo
             .find_by_id(request.exam_type_id)
             .await?
             .ok_or(TestManagementError::ExamTypeNotFound)?;
 
-        let subject = Subject::new(request.name, request.exam_type_id);
+        let subject = Subject::new(request.name, request.lesson_id, request.exam_type_id);
         let created = self.subject_repo.create(&subject).await?;
 
         Ok(SubjectResponse {
             id: created.id,
             name: created.name,
+            lesson_id: created.lesson_id,
             exam_type_id: created.exam_type_id,
             created_at: created.created_at,
         })
@@ -280,6 +400,7 @@ where
         Ok(SubjectResponse {
             id: subject.id,
             name: subject.name,
+            lesson_id: subject.lesson_id,
             exam_type_id: subject.exam_type_id,
             created_at: subject.created_at,
         })
@@ -296,6 +417,29 @@ where
             .map(|s| SubjectResponse {
                 id: s.id,
                 name: s.name,
+                lesson_id: s.lesson_id,
+                exam_type_id: s.exam_type_id,
+                created_at: s.created_at,
+            })
+            .collect())
+    }
+
+    async fn list_subjects_by_lesson_and_exam_type(
+        &self,
+        lesson_id: Uuid,
+        exam_type_id: Uuid,
+    ) -> Result<Vec<SubjectResponse>, TestManagementError> {
+        let subjects = self
+            .subject_repo
+            .find_by_lesson_and_exam_type(lesson_id, exam_type_id)
+            .await?;
+
+        Ok(subjects
+            .into_iter()
+            .map(|s| SubjectResponse {
+                id: s.id,
+                name: s.name,
+                lesson_id: s.lesson_id,
                 exam_type_id: s.exam_type_id,
                 created_at: s.created_at,
             })
@@ -310,6 +454,7 @@ where
             .map(|s| SubjectResponse {
                 id: s.id,
                 name: s.name,
+                lesson_id: s.lesson_id,
                 exam_type_id: s.exam_type_id,
                 created_at: s.created_at,
             })
@@ -330,6 +475,14 @@ where
         if let Some(name) = request.name {
             subject.name = name;
         }
+        if let Some(lesson_id) = request.lesson_id {
+            // Verify lesson exists
+            self.lesson_repo
+                .find_by_id(lesson_id)
+                .await?
+                .ok_or(TestManagementError::LessonNotFound)?;
+            subject.lesson_id = lesson_id;
+        }
         if let Some(exam_type_id) = request.exam_type_id {
             // Verify exam type exists
             self.exam_type_repo
@@ -344,6 +497,7 @@ where
         Ok(SubjectResponse {
             id: updated.id,
             name: updated.name,
+            lesson_id: updated.lesson_id,
             exam_type_id: updated.exam_type_id,
             created_at: updated.created_at,
         })
@@ -361,7 +515,11 @@ where
         &self,
         request: CreateTestBookRequest,
     ) -> Result<TestBookResponse, TestManagementError> {
-        // Verify exam type and subject exist
+        // Verify lesson, exam type and subject exist
+        self.lesson_repo
+            .find_by_id(request.lesson_id)
+            .await?
+            .ok_or(TestManagementError::LessonNotFound)?;
         self.exam_type_repo
             .find_by_id(request.exam_type_id)
             .await?
@@ -373,6 +531,7 @@ where
 
         let test_book = TestBook::new(
             request.name,
+            request.lesson_id,
             request.exam_type_id,
             request.subject_id,
             request.published_year,
@@ -382,6 +541,7 @@ where
         Ok(TestBookResponse {
             id: created.id,
             name: created.name,
+            lesson_id: created.lesson_id,
             exam_type_id: created.exam_type_id,
             subject_id: created.subject_id,
             published_year: created.published_year,
@@ -399,6 +559,7 @@ where
         Ok(TestBookResponse {
             id: test_book.id,
             name: test_book.name,
+            lesson_id: test_book.lesson_id,
             exam_type_id: test_book.exam_type_id,
             subject_id: test_book.subject_id,
             published_year: test_book.published_year,
@@ -417,6 +578,7 @@ where
             .map(|tb| TestBookResponse {
                 id: tb.id,
                 name: tb.name,
+                lesson_id: tb.lesson_id,
                 exam_type_id: tb.exam_type_id,
                 subject_id: tb.subject_id,
                 published_year: tb.published_year,
@@ -433,6 +595,7 @@ where
             .map(|tb| TestBookResponse {
                 id: tb.id,
                 name: tb.name,
+                lesson_id: tb.lesson_id,
                 exam_type_id: tb.exam_type_id,
                 subject_id: tb.subject_id,
                 published_year: tb.published_year,
@@ -454,6 +617,13 @@ where
 
         if let Some(name) = request.name {
             test_book.name = name;
+        }
+        if let Some(lesson_id) = request.lesson_id {
+            self.lesson_repo
+                .find_by_id(lesson_id)
+                .await?
+                .ok_or(TestManagementError::LessonNotFound)?;
+            test_book.lesson_id = lesson_id;
         }
         if let Some(exam_type_id) = request.exam_type_id {
             self.exam_type_repo
@@ -478,6 +648,7 @@ where
         Ok(TestBookResponse {
             id: updated.id,
             name: updated.name,
+            lesson_id: updated.lesson_id,
             exam_type_id: updated.exam_type_id,
             subject_id: updated.subject_id,
             published_year: updated.published_year,

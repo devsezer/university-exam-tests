@@ -16,6 +16,13 @@ pub trait SubjectRepository: Send + Sync {
     /// Finds subjects by exam type ID.
     async fn find_by_exam_type_id(&self, exam_type_id: Uuid) -> Result<Vec<Subject>, DomainError>;
 
+    /// Finds subjects by lesson ID and exam type ID.
+    async fn find_by_lesson_and_exam_type(
+        &self,
+        lesson_id: Uuid,
+        exam_type_id: Uuid,
+    ) -> Result<Vec<Subject>, DomainError>;
+
     /// Updates an existing subject.
     async fn update(&self, subject: &Subject) -> Result<Subject, DomainError>;
 

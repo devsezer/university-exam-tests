@@ -3,6 +3,26 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use validator::Validate;
 
+// Lesson DTOs
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LessonResponse {
+    pub id: Uuid,
+    pub name: String,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Deserialize, Validate)]
+pub struct CreateLessonRequest {
+    #[validate(length(min = 1, max = 100, message = "Name must be between 1 and 100 characters"))]
+    pub name: String,
+}
+
+#[derive(Debug, Clone, Deserialize, Validate)]
+pub struct UpdateLessonRequest {
+    #[validate(length(min = 1, max = 100, message = "Name must be between 1 and 100 characters"))]
+    pub name: Option<String>,
+}
+
 // ExamType DTOs
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ExamTypeResponse {
@@ -31,6 +51,7 @@ pub struct UpdateExamTypeRequest {
 pub struct SubjectResponse {
     pub id: Uuid,
     pub name: String,
+    pub lesson_id: Uuid,
     pub exam_type_id: Uuid,
     pub created_at: DateTime<Utc>,
 }
@@ -39,6 +60,7 @@ pub struct SubjectResponse {
 pub struct CreateSubjectRequest {
     #[validate(length(min = 1, max = 100, message = "Name must be between 1 and 100 characters"))]
     pub name: String,
+    pub lesson_id: Uuid,
     pub exam_type_id: Uuid,
 }
 
@@ -46,6 +68,7 @@ pub struct CreateSubjectRequest {
 pub struct UpdateSubjectRequest {
     #[validate(length(min = 1, max = 100, message = "Name must be between 1 and 100 characters"))]
     pub name: Option<String>,
+    pub lesson_id: Option<Uuid>,
     pub exam_type_id: Option<Uuid>,
 }
 
@@ -54,6 +77,7 @@ pub struct UpdateSubjectRequest {
 pub struct TestBookResponse {
     pub id: Uuid,
     pub name: String,
+    pub lesson_id: Uuid,
     pub exam_type_id: Uuid,
     pub subject_id: Uuid,
     pub published_year: u16,
@@ -64,6 +88,7 @@ pub struct TestBookResponse {
 pub struct CreateTestBookRequest {
     #[validate(length(min = 1, max = 255, message = "Name must be between 1 and 255 characters"))]
     pub name: String,
+    pub lesson_id: Uuid,
     pub exam_type_id: Uuid,
     pub subject_id: Uuid,
     #[validate(range(min = 2000, max = 2100, message = "Published year must be between 2000 and 2100"))]
@@ -74,6 +99,7 @@ pub struct CreateTestBookRequest {
 pub struct UpdateTestBookRequest {
     #[validate(length(min = 1, max = 255, message = "Name must be between 1 and 255 characters"))]
     pub name: Option<String>,
+    pub lesson_id: Option<Uuid>,
     pub exam_type_id: Option<Uuid>,
     pub subject_id: Option<Uuid>,
     #[validate(range(min = 2000, max = 2100, message = "Published year must be between 2000 and 2100"))]

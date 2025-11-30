@@ -179,10 +179,12 @@ impl From<JwtError> for AppError {
 impl From<TestManagementError> for AppError {
     fn from(err: TestManagementError) -> Self {
         match err {
+            TestManagementError::LessonNotFound => AppError::NotFound("Lesson not found".to_string()),
             TestManagementError::ExamTypeNotFound => AppError::NotFound("Exam type not found".to_string()),
             TestManagementError::SubjectNotFound => AppError::NotFound("Subject not found".to_string()),
             TestManagementError::TestBookNotFound => AppError::NotFound("Test book not found".to_string()),
             TestManagementError::PracticeTestNotFound => AppError::NotFound("Practice test not found".to_string()),
+            TestManagementError::DuplicateLessonName => AppError::Conflict("Lesson name already exists".to_string()),
             TestManagementError::DuplicateExamTypeName => AppError::Conflict("Exam type name already exists".to_string()),
             TestManagementError::DuplicateSubjectName => AppError::Conflict("Subject name already exists for this exam type".to_string()),
             TestManagementError::DuplicateTestNumber => AppError::Conflict("Test number already exists for this test book".to_string()),

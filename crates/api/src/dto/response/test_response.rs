@@ -3,6 +3,16 @@ use serde::Serialize;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
+/// Response for lesson.
+#[derive(Debug, Clone, Serialize, ToSchema)]
+pub struct LessonResponse {
+    #[schema(example = "550e8400-e29b-41d4-a716-446655440000")]
+    pub id: Uuid,
+    #[schema(example = "Matematik")]
+    pub name: String,
+    pub created_at: DateTime<Utc>,
+}
+
 /// Response for exam type.
 #[derive(Debug, Clone, Serialize, ToSchema)]
 pub struct ExamTypeResponse {
@@ -23,6 +33,8 @@ pub struct SubjectResponse {
     #[schema(example = "Matematik")]
     pub name: String,
     #[schema(example = "550e8400-e29b-41d4-a716-446655440001")]
+    pub lesson_id: Uuid,
+    #[schema(example = "550e8400-e29b-41d4-a716-446655440002")]
     pub exam_type_id: Uuid,
     pub created_at: DateTime<Utc>,
 }
@@ -35,8 +47,10 @@ pub struct TestBookResponse {
     #[schema(example = "Limit Yayınları TYT Matematik")]
     pub name: String,
     #[schema(example = "550e8400-e29b-41d4-a716-446655440001")]
-    pub exam_type_id: Uuid,
+    pub lesson_id: Uuid,
     #[schema(example = "550e8400-e29b-41d4-a716-446655440002")]
+    pub exam_type_id: Uuid,
+    #[schema(example = "550e8400-e29b-41d4-a716-446655440003")]
     pub subject_id: Uuid,
     #[schema(example = 2024)]
     pub published_year: u16,
@@ -94,6 +108,16 @@ pub struct SolveTestResponse {
 }
 
 // Conversion implementations
+impl From<application::dto::LessonResponse> for LessonResponse {
+    fn from(dto: application::dto::LessonResponse) -> Self {
+        Self {
+            id: dto.id,
+            name: dto.name,
+            created_at: dto.created_at,
+        }
+    }
+}
+
 impl From<application::dto::ExamTypeResponse> for ExamTypeResponse {
     fn from(dto: application::dto::ExamTypeResponse) -> Self {
         Self {
@@ -110,6 +134,7 @@ impl From<application::dto::SubjectResponse> for SubjectResponse {
         Self {
             id: dto.id,
             name: dto.name,
+            lesson_id: dto.lesson_id,
             exam_type_id: dto.exam_type_id,
             created_at: dto.created_at,
         }
@@ -121,6 +146,7 @@ impl From<application::dto::TestBookResponse> for TestBookResponse {
         Self {
             id: dto.id,
             name: dto.name,
+            lesson_id: dto.lesson_id,
             exam_type_id: dto.exam_type_id,
             subject_id: dto.subject_id,
             published_year: dto.published_year,

@@ -7,7 +7,7 @@ use application::services::{
 };
 use infrastructure::config::Settings;
 use infrastructure::database::repositories::{
-    PgExamTypeRepository, PgPracticeTestRepository, PgRefreshTokenRepository,
+    PgExamTypeRepository, PgLessonRepository, PgPracticeTestRepository, PgRefreshTokenRepository,
     PgRoleRepository, PgSubjectRepository, PgTestBookRepository, PgTestResultRepository,
     PgUserRepository,
 };
@@ -40,6 +40,8 @@ pub struct AppState {
     pub role_repo: Arc<PgRoleRepository>,
     /// Refresh token repository (singleton)
     pub refresh_token_repo: Arc<PgRefreshTokenRepository>,
+    /// Lesson repository (singleton)
+    pub lesson_repo: Arc<PgLessonRepository>,
     /// Exam type repository (singleton)
     pub exam_type_repo: Arc<PgExamTypeRepository>,
     /// Subject repository (singleton)
@@ -70,6 +72,7 @@ impl AppState {
         let user_repo = Arc::new(PgUserRepository::new(db_pool.clone()));
         let refresh_token_repo = Arc::new(PgRefreshTokenRepository::new(db_pool.clone()));
         let role_repo = Arc::new(PgRoleRepository::new(db_pool.clone()));
+        let lesson_repo = Arc::new(PgLessonRepository::new(db_pool.clone()));
         let exam_type_repo = Arc::new(PgExamTypeRepository::new(db_pool.clone()));
         let subject_repo = Arc::new(PgSubjectRepository::new(db_pool.clone()));
         let test_book_repo = Arc::new(PgTestBookRepository::new(db_pool.clone()));
@@ -92,6 +95,7 @@ impl AppState {
         // Initialize test management service
         let test_management_service: Arc<dyn TestManagementService> = Arc::new(
             TestManagementServiceImpl::new(
+                lesson_repo.clone(),
                 exam_type_repo.clone(),
                 subject_repo.clone(),
                 test_book_repo.clone(),
@@ -123,6 +127,7 @@ impl AppState {
             user_repo,
             role_repo,
             refresh_token_repo,
+            lesson_repo,
             exam_type_repo,
             subject_repo,
             test_book_repo,

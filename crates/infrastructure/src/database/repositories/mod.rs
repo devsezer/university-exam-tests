@@ -1,4 +1,5 @@
 mod exam_type_repository_impl;
+mod lesson_repository_impl;
 mod practice_test_repository_impl;
 mod refresh_token_repository_impl;
 mod role_repository_impl;
@@ -8,6 +9,7 @@ mod test_result_repository_impl;
 mod user_repository_impl;
 
 pub use exam_type_repository_impl::PgExamTypeRepository;
+pub use lesson_repository_impl::PgLessonRepository;
 pub use practice_test_repository_impl::PgPracticeTestRepository;
 pub use refresh_token_repository_impl::PgRefreshTokenRepository;
 pub use role_repository_impl::PgRoleRepository;
