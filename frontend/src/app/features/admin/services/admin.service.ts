@@ -116,6 +116,10 @@ export class AdminService {
     return this.api.get<TestBook[]>('/test-books', params);
   }
 
+  getTestBookSubjects(testBookId: string): Observable<ApiResponse<Subject[]>> {
+    return this.api.get<Subject[]>(`/test-books/${testBookId}/subjects`);
+  }
+
   // Practice Tests
   createPracticeTest(data: CreatePracticeTestRequest): Observable<ApiResponse<PracticeTest>> {
     return this.api.post<PracticeTest>('/admin/practice-tests', data);

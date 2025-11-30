@@ -24,7 +24,7 @@ export interface TestBook {
   name: string;
   exam_type_id: string;
   lesson_id: string;
-  subject_id: string;
+  subject_ids: string[];
   published_year: number;
   created_at: string;
 }
@@ -36,6 +36,7 @@ export interface PracticeTest {
   question_count: number;
   answer_key: string;
   test_book_id: string;
+  subject_id: string;
   created_at: string;
 }
 
@@ -96,7 +97,7 @@ export interface CreateTestBookRequest {
   name: string;
   exam_type_id: string;
   lesson_id: string;
-  subject_id: string;
+  subject_ids: string[];
   published_year: number;
 }
 
@@ -104,7 +105,7 @@ export interface UpdateTestBookRequest {
   name?: string;
   exam_type_id?: string;
   lesson_id?: string;
-  subject_id?: string;
+  subject_ids?: string[];
   published_year?: number;
 }
 
@@ -114,6 +115,7 @@ export interface CreatePracticeTestRequest {
   question_count: number;
   answer_key: string;
   test_book_id: string;
+  subject_id: string;
 }
 
 export interface UpdatePracticeTestRequest {
@@ -122,4 +124,5 @@ export interface UpdatePracticeTestRequest {
   question_count?: number;
   answer_key?: string;
   test_book_id?: string;
+  subject_id?: string;
 }

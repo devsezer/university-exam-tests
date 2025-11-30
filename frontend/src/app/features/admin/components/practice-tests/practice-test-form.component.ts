@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { AdminService } from '../../services/admin.service';
-import { PracticeTest, TestBook, CreatePracticeTestRequest, UpdatePracticeTestRequest } from '../../../../models/test.models';
+import { PracticeTest, TestBook, Subject, CreatePracticeTestRequest, UpdatePracticeTestRequest } from '../../../../models/test.models';
 import { LoadingSpinnerComponent } from '../../../../shared/components/loading-spinner/loading-spinner.component';
 import { ErrorMessageComponent } from '../../../../shared/components/error-message/error-message.component';
 
@@ -36,6 +36,7 @@ import { ErrorMessageComponent } from '../../../../shared/components/error-messa
               <label for="test_book_id" class="block text-sm font-medium text-gray-700">Test Kitabı *</label>
               <select id="test_book_id" 
                       formControlName="test_book_id"
+                      (change)="onTestBookChange()"
                       class="mt-1 block w-full px-4 py-3 rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
                 <option [value]="null" disabled>Test kitabı seçiniz</option>
                 @for (testBook of testBooks(); track testBook.id) {
@@ -47,6 +48,28 @@ import { ErrorMessageComponent } from '../../../../shared/components/error-messa
               <div *ngIf="form.get('test_book_id')?.invalid && form.get('test_book_id')?.touched" 
                    class="mt-1 text-sm text-red-600">
                 Test kitabı seçilmelidir
+              </div>
+            </div>
+
+            <div *ngIf="form.get('test_book_id')?.value">
+              <label for="subject_id" class="block text-sm font-medium text-gray-700">Konu *</label>
+              <select id="subject_id" 
+                      formControlName="subject_id"
+                      [disabled]="!form.get('test_book_id')?.value || isLoadingSubjects()"
+                      class="mt-1 block w-full px-4 py-3 rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm disabled:bg-gray-100">
+                <option [value]="null" disabled>Konu seçiniz</option>
+                @for (subject of filteredSubjects(); track subject.id) {
+                  <option [value]="subject.id">
+                    {{ subject.name }}
+                  </option>
+                }
+              </select>
+              <div *ngIf="isLoadingSubjects()" class="mt-2">
+                <app-loading-spinner></app-loading-spinner>
+              </div>
+              <div *ngIf="form.get('subject_id')?.invalid && form.get('subject_id')?.touched" 
+                   class="mt-1 text-sm text-red-600">
+                Konu seçilmelidir
               </div>
             </div>
 
@@ -136,6 +159,8 @@ export class PracticeTestFormComponent implements OnInit {
   isEditMode = signal(false);
   errorMessage = signal<string | null>(null);
   readonly testBooks = signal<TestBook[]>([]);
+  readonly filteredSubjects = signal<Subject[]>([]);
+  isLoadingSubjects = signal(false);
   practiceTestId: string | null = null;
 
   constructor(
@@ -146,6 +171,7 @@ export class PracticeTestFormComponent implements OnInit {
   ) {
     this.form = this.fb.group({
       test_book_id: [null, [Validators.required]],
+      subject_id: [null, [Validators.required]],
       name: ['', [Validators.required, Validators.minLength(1), Validators.maxLength(255)]],
       test_number: [1, [Validators.required, Validators.min(1)]],
       question_count: [40, [Validators.required, Validators.min(1)]],
@@ -218,11 +244,16 @@ export class PracticeTestFormComponent implements OnInit {
           const practiceTest = response.data;
           this.form.patchValue({
             test_book_id: practiceTest.test_book_id,
+            subject_id: practiceTest.subject_id,
             name: practiceTest.name,
             test_number: practiceTest.test_number,
             question_count: practiceTest.question_count,
             answer_key: practiceTest.answer_key
           });
+          // Load subjects for the selected test book
+          if (practiceTest.test_book_id) {
+            this.loadTestBookSubjects(practiceTest.test_book_id);
+          }
         } else {
           this.errorMessage.set(response.message || 'Deneme testi yüklenemedi.');
         }
@@ -230,6 +261,37 @@ export class PracticeTestFormComponent implements OnInit {
       error: (error) => {
         this.isLoading.set(false);
         this.errorMessage.set(error.error?.error?.message || 'Deneme testi yüklenirken bir hata oluştu.');
+      }
+    });
+  }
+
+  onTestBookChange(): void {
+    const testBookId = this.form.get('test_book_id')?.value;
+    // Reset subject selection
+    this.form.patchValue({ subject_id: null });
+    this.filteredSubjects.set([]);
+    
+    if (testBookId) {
+      this.loadTestBookSubjects(testBookId);
+    }
+  }
+
+  loadTestBookSubjects(testBookId: string): void {
+    this.isLoadingSubjects.set(true);
+    this.adminService.getTestBookSubjects(testBookId).subscribe({
+      next: (response) => {
+        this.isLoadingSubjects.set(false);
+        if (response.success && response.data) {
+          this.filteredSubjects.set(response.data);
+        } else {
+          this.errorMessage.set(response.message || 'Konular yüklenemedi.');
+          this.filteredSubjects.set([]);
+        }
+      },
+      error: (error) => {
+        this.isLoadingSubjects.set(false);
+        this.errorMessage.set(error.error?.error?.message || 'Konular yüklenirken bir hata oluştu.');
+        this.filteredSubjects.set([]);
       }
     });
   }
@@ -247,7 +309,8 @@ export class PracticeTestFormComponent implements OnInit {
           test_number: formValue.test_number,
           question_count: formValue.question_count,
           answer_key: formValue.answer_key,
-          test_book_id: formValue.test_book_id
+          test_book_id: formValue.test_book_id,
+          subject_id: formValue.subject_id
         };
         this.adminService.updatePracticeTest(this.practiceTestId, request).subscribe({
           next: () => {
@@ -264,7 +327,8 @@ export class PracticeTestFormComponent implements OnInit {
           test_number: formValue.test_number,
           question_count: formValue.question_count,
           answer_key: formValue.answer_key,
-          test_book_id: formValue.test_book_id
+          test_book_id: formValue.test_book_id,
+          subject_id: formValue.subject_id
         };
         this.adminService.createPracticeTest(request).subscribe({
           next: () => {

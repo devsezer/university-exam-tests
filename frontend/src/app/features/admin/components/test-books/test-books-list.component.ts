@@ -53,8 +53,9 @@ import { DeleteConfirmationComponent } from '../../../../shared/components/delet
                       <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 mr-1">
                         {{ getLessonName(testBook.lesson_id) }}
                       </span>
-                      <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 mr-1">
-                        {{ getSubjectName(testBook.subject_id) }}
+                      <span *ngFor="let subjectId of testBook.subject_ids || []"
+                            class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 mr-1">
+                        {{ getSubjectName(subjectId) }}
                       </span>
                       <span class="text-gray-400">({{ testBook.published_year }})</span>
                     </div>

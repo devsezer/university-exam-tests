@@ -2,7 +2,7 @@ import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { AdminService } from '../../services/admin.service';
-import { PracticeTest, TestBook } from '../../../../models/test.models';
+import { PracticeTest, TestBook, Subject } from '../../../../models/test.models';
 import { LoadingSpinnerComponent } from '../../../../shared/components/loading-spinner/loading-spinner.component';
 import { ErrorMessageComponent } from '../../../../shared/components/error-message/error-message.component';
 import { DeleteConfirmationComponent } from '../../../../shared/components/delete-confirmation/delete-confirmation.component';
@@ -47,7 +47,7 @@ import { DeleteConfirmationComponent } from '../../../../shared/components/delet
                   <div class="ml-4">
                     <div class="text-sm font-medium text-gray-900">{{ practiceTest.name }}</div>
                     <div class="text-sm text-gray-500">
-                      {{ getTestBookName(practiceTest.test_book_id) }} - {{ practiceTest.question_count }} soru
+                      {{ getTestBookName(practiceTest.test_book_id) }} - {{ getSubjectName(practiceTest.subject_id) }} - {{ practiceTest.question_count }} soru
                     </div>
                   </div>
                 </div>
@@ -97,6 +97,7 @@ import { DeleteConfirmationComponent } from '../../../../shared/components/delet
 export class PracticeTestsListComponent implements OnInit {
   practiceTests = signal<PracticeTest[]>([]);
   testBooks = signal<TestBook[]>([]);
+  subjects = signal<Subject[]>([]);
   isLoading = signal(true);
   errorMessage = signal<string | null>(null);
   showDeleteDialog = signal(false);
@@ -117,6 +118,7 @@ export class PracticeTestsListComponent implements OnInit {
           this.practiceTests.set(response.data);
         }
         this.loadTestBooks();
+        this.loadSubjects();
       },
       error: () => {
         this.isLoading.set(false);
@@ -139,9 +141,27 @@ export class PracticeTestsListComponent implements OnInit {
     });
   }
 
+  loadSubjects(): void {
+    this.adminService.listSubjects().subscribe({
+      next: (response) => {
+        if (response.success && response.data) {
+          this.subjects.set(response.data);
+        }
+      },
+      error: () => {
+        // Silently fail - subjects are optional for display
+      }
+    });
+  }
+
   getTestBookName(testBookId: string): string {
     const testBook = this.testBooks().find(tb => tb.id === testBookId);
     return testBook?.name || testBookId.substring(0, 8);
+  }
+
+  getSubjectName(subjectId: string): string {
+    const subject = this.subjects().find(s => s.id === subjectId);
+    return subject?.name || subjectId.substring(0, 8);
   }
 
   confirmDelete(practiceTest: PracticeTest): void {
