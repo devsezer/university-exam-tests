@@ -2,7 +2,8 @@ export interface User {
   id: string;
   username: string;
   email: string;
-  roles?: Role[];
+  is_active?: boolean;
+  roles?: string[];  // Backend'den string array olarak geliyor: ["admin", "user"]
   created_at: string;
   updated_at?: string;
 }

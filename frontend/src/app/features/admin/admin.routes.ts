@@ -8,6 +8,10 @@ import { TestBooksListComponent } from './components/test-books/test-books-list.
 import { TestBookFormComponent } from './components/test-books/test-book-form.component';
 import { PracticeTestsListComponent } from './components/practice-tests/practice-tests-list.component';
 import { PracticeTestFormComponent } from './components/practice-tests/practice-test-form.component';
+import { UsersListComponent } from './components/users/users-list.component';
+import { UserFormComponent } from './components/users/user-form.component';
+import { UserDetailComponent } from './components/users/user-detail.component';
+import { RolesListComponent } from './components/roles/roles-list.component';
 
 export const adminRoutes: Routes = [
   { path: '', component: AdminDashboardComponent },
@@ -23,5 +27,9 @@ export const adminRoutes: Routes = [
   { path: 'practice-tests', component: PracticeTestsListComponent },
   { path: 'practice-tests/new', component: PracticeTestFormComponent },
   { path: 'practice-tests/:id/edit', component: PracticeTestFormComponent },
+  { path: 'users', component: UsersListComponent },
+  { path: 'users/:id', component: UserDetailComponent },
+  { path: 'users/:id/edit', component: UserFormComponent },
+  { path: 'roles', component: RolesListComponent },
 ];
 

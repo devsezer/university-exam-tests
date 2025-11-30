@@ -33,13 +33,14 @@ export class AuthService {
   readonly isAdmin = computed(() => {
     const user = this.user();
     console.log(user);
-    //return user?.roles?.some(r => r.name === 'user' || r.name === 'super_admin') ?? false;
-    return true;
+    // Backend'den roles string array olarak geliyor: ["admin", "user"]
+    return user?.roles?.some(r => r === 'admin') ?? false;
   });
 
   readonly isSuperAdmin = computed(() => {
     const user = this.user();
-    return user?.roles?.some(r => r.name === 'super_admin') ?? false;
+    // Backend'den roles string array olarak geliyor
+    return user?.roles?.some(r => r === 'super_admin') ?? false;
   });
 
   constructor(
@@ -157,15 +158,14 @@ export class AuthService {
 
   hasRole(role: string): boolean {
     const user = this.user();
-    return user?.roles?.some(r => r.name === role) ?? false;
+    // Backend'den roles string array olarak geliyor
+    return user?.roles?.some(r => r === role) ?? false;
   }
 
   hasPermission(permission: string): boolean {
-    const user = this.user();
-    if (!user?.roles) return false;
-
-    // Check if any role has this permission
-    return user.roles.some(role => role.permissions?.includes(permission)) ?? false;
+    // Backend'den permission bilgisi gelmiyor, bu fonksiyon şu an çalışmaz
+    // Eğer backend'den permission bilgisi geliyorsa güncelleyin
+    return false;
   }
 
   private clearAuth(): void {

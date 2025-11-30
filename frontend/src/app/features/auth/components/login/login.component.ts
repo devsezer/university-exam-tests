@@ -79,8 +79,8 @@ export class LoginComponent {
     private router: Router
   ) {
     this.loginForm = this.fb.group({
-      email: ['john@example.com', [Validators.required, Validators.email]],
-      password: ['SecureP@ss123', [Validators.required]]
+      email: ['admin@deneme.com', [Validators.required, Validators.email]],
+      password: ['Admin123!', [Validators.required]]
     });
   }
 

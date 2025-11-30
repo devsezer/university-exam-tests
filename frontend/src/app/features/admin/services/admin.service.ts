@@ -15,7 +15,9 @@ import {
   CreatePracticeTestRequest,
   UpdatePracticeTestRequest
 } from '../../../models/test.models';
-import { ApiResponse } from '../../../models/api.models';
+import { ApiResponse, PaginatedResponse } from '../../../models/api.models';
+import { User, UpdateUserRequest, ListUsersParams, AssignRoleRequest } from '../../../models/user.models';
+import { Role } from '../../../models/role.models';
 
 @Injectable({
   providedIn: 'root'
@@ -108,6 +110,40 @@ export class AdminService {
   listPracticeTests(testBookId?: string): Observable<ApiResponse<PracticeTest[]>> {
     const params = testBookId ? { test_book_id: testBookId } : undefined;
     return this.api.get<PracticeTest[]>('/practice-tests', params);
+  }
+
+  // User Management
+  listUsers(params?: ListUsersParams): Observable<ApiResponse<PaginatedResponse<User>>> {
+    return this.api.get<PaginatedResponse<User>>('/admin/users', params);
+  }
+
+  getUser(id: string): Observable<ApiResponse<User>> {
+    return this.api.get<User>(`/admin/users/${id}`);
+  }
+
+  updateUser(id: string, data: UpdateUserRequest): Observable<ApiResponse<User>> {
+    return this.api.put<User>(`/admin/users/${id}`, data);
+  }
+
+  deleteUser(id: string): Observable<ApiResponse<void>> {
+    return this.api.delete<void>(`/admin/users/${id}`);
+  }
+
+  restoreUser(id: string): Observable<ApiResponse<User>> {
+    return this.api.post<User>(`/admin/users/${id}/restore`, {});
+  }
+
+  assignRoleToUser(userId: string, roleId: string): Observable<ApiResponse<void>> {
+    return this.api.post<void>(`/admin/users/${userId}/roles`, { role_id: roleId });
+  }
+
+  removeRoleFromUser(userId: string, roleId: string): Observable<ApiResponse<void>> {
+    return this.api.delete<void>(`/admin/users/${userId}/roles/${roleId}`);
+  }
+
+  // Role Management
+  listRoles(): Observable<ApiResponse<Role[]>> {
+    return this.api.get<Role[]>('/admin/roles');
   }
 }
 

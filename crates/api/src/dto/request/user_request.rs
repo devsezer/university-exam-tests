@@ -36,3 +36,19 @@ pub struct UpdateRoleRequest {
     pub description: Option<String>,
 }
 
+/// Request to update a user.
+#[derive(Debug, Deserialize, Validate, ToSchema)]
+pub struct UpdateUserRequest {
+    /// Username
+    #[schema(example = "john_doe")]
+    #[validate(length(min = 3, max = 50, message = "Username must be between 3 and 50 characters"))]
+    pub username: Option<String>,
+    /// Email address
+    #[schema(example = "john@example.com")]
+    #[validate(email(message = "Invalid email address"))]
+    pub email: Option<String>,
+    /// Whether the account is active
+    #[schema(example = true)]
+    pub is_active: Option<bool>,
+}
+

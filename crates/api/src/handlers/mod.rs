@@ -8,5 +8,5 @@ pub use auth_handler::*;
 pub use health_handler::*;
 pub use role_handler::*;
 pub use test_handler::*;
-// user_handler is currently empty, will be used for user management operations
+pub use user_handler::*;
 
