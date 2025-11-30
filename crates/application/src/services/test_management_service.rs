@@ -1,0 +1,586 @@
+use async_trait::async_trait;
+use std::sync::Arc;
+use uuid::Uuid;
+
+use domain::entities::{ExamType, PracticeTest, Subject, TestBook};
+use domain::errors::DomainError;
+use domain::repositories::{
+    ExamTypeRepository, PracticeTestRepository, SubjectRepository, TestBookRepository,
+};
+
+use crate::dto::{
+    CreateExamTypeRequest, CreatePracticeTestRequest, CreateSubjectRequest, CreateTestBookRequest,
+    ExamTypeResponse, PracticeTestResponse, SubjectResponse, TestBookResponse,
+    UpdateExamTypeRequest, UpdatePracticeTestRequest, UpdateSubjectRequest, UpdateTestBookRequest,
+};
+
+/// Errors for test management operations.
+#[derive(Debug, thiserror::Error)]
+pub enum TestManagementError {
+    #[error("Exam type not found")]
+    ExamTypeNotFound,
+
+    #[error("Subject not found")]
+    SubjectNotFound,
+
+    #[error("Test book not found")]
+    TestBookNotFound,
+
+    #[error("Practice test not found")]
+    PracticeTestNotFound,
+
+    #[error("Duplicate exam type name")]
+    DuplicateExamTypeName,
+
+    #[error("Duplicate subject name for exam type")]
+    DuplicateSubjectName,
+
+    #[error("Duplicate test number for test book")]
+    DuplicateTestNumber,
+
+    #[error("Internal error: {0}")]
+    InternalError(String),
+}
+
+impl From<DomainError> for TestManagementError {
+    fn from(err: DomainError) -> Self {
+        TestManagementError::InternalError(err.to_string())
+    }
+}
+
+/// Trait for test management operations.
+#[async_trait]
+pub trait TestManagementService: Send + Sync {
+    // ExamType operations
+    async fn create_exam_type(
+        &self,
+        request: CreateExamTypeRequest,
+    ) -> Result<ExamTypeResponse, TestManagementError>;
+    async fn get_exam_type(&self, id: Uuid) -> Result<ExamTypeResponse, TestManagementError>;
+    async fn list_exam_types(&self) -> Result<Vec<ExamTypeResponse>, TestManagementError>;
+    async fn update_exam_type(
+        &self,
+        id: Uuid,
+        request: UpdateExamTypeRequest,
+    ) -> Result<ExamTypeResponse, TestManagementError>;
+    async fn delete_exam_type(&self, id: Uuid) -> Result<(), TestManagementError>;
+
+    // Subject operations
+    async fn create_subject(
+        &self,
+        request: CreateSubjectRequest,
+    ) -> Result<SubjectResponse, TestManagementError>;
+    async fn get_subject(&self, id: Uuid) -> Result<SubjectResponse, TestManagementError>;
+    async fn list_subjects_by_exam_type(
+        &self,
+        exam_type_id: Uuid,
+    ) -> Result<Vec<SubjectResponse>, TestManagementError>;
+    async fn update_subject(
+        &self,
+        id: Uuid,
+        request: UpdateSubjectRequest,
+    ) -> Result<SubjectResponse, TestManagementError>;
+    async fn delete_subject(&self, id: Uuid) -> Result<(), TestManagementError>;
+
+    // TestBook operations
+    async fn create_test_book(
+        &self,
+        request: CreateTestBookRequest,
+    ) -> Result<TestBookResponse, TestManagementError>;
+    async fn get_test_book(&self, id: Uuid) -> Result<TestBookResponse, TestManagementError>;
+    async fn list_test_books_by_subject(
+        &self,
+        subject_id: Uuid,
+    ) -> Result<Vec<TestBookResponse>, TestManagementError>;
+    async fn update_test_book(
+        &self,
+        id: Uuid,
+        request: UpdateTestBookRequest,
+    ) -> Result<TestBookResponse, TestManagementError>;
+    async fn delete_test_book(&self, id: Uuid) -> Result<(), TestManagementError>;
+
+    // PracticeTest operations
+    async fn create_practice_test(
+        &self,
+        request: CreatePracticeTestRequest,
+    ) -> Result<PracticeTestResponse, TestManagementError>;
+    async fn get_practice_test(&self, id: Uuid) -> Result<PracticeTestResponse, TestManagementError>;
+    async fn list_practice_tests_by_test_book(
+        &self,
+        test_book_id: Uuid,
+    ) -> Result<Vec<PracticeTestResponse>, TestManagementError>;
+    async fn update_practice_test(
+        &self,
+        id: Uuid,
+        request: UpdatePracticeTestRequest,
+    ) -> Result<PracticeTestResponse, TestManagementError>;
+    async fn delete_practice_test(&self, id: Uuid) -> Result<(), TestManagementError>;
+}
+
+/// Implementation of TestManagementService.
+pub struct TestManagementServiceImpl<E, S, T, P>
+where
+    E: ExamTypeRepository,
+    S: SubjectRepository,
+    T: TestBookRepository,
+    P: PracticeTestRepository,
+{
+    exam_type_repo: Arc<E>,
+    subject_repo: Arc<S>,
+    test_book_repo: Arc<T>,
+    practice_test_repo: Arc<P>,
+}
+
+impl<E, S, T, P> TestManagementServiceImpl<E, S, T, P>
+where
+    E: ExamTypeRepository,
+    S: SubjectRepository,
+    T: TestBookRepository,
+    P: PracticeTestRepository,
+{
+    pub fn new(
+        exam_type_repo: Arc<E>,
+        subject_repo: Arc<S>,
+        test_book_repo: Arc<T>,
+        practice_test_repo: Arc<P>,
+    ) -> Self {
+        Self {
+            exam_type_repo,
+            subject_repo,
+            test_book_repo,
+            practice_test_repo,
+        }
+    }
+}
+
+#[async_trait]
+impl<E, S, T, P> TestManagementService for TestManagementServiceImpl<E, S, T, P>
+where
+    E: ExamTypeRepository + 'static,
+    S: SubjectRepository + 'static,
+    T: TestBookRepository + 'static,
+    P: PracticeTestRepository + 'static,
+{
+    async fn create_exam_type(
+        &self,
+        request: CreateExamTypeRequest,
+    ) -> Result<ExamTypeResponse, TestManagementError> {
+        // Check for duplicate name
+        if self.exam_type_repo.find_by_name(&request.name).await?.is_some() {
+            return Err(TestManagementError::DuplicateExamTypeName);
+        }
+
+        let exam_type = ExamType::new(request.name, request.description);
+        let created = self.exam_type_repo.create(&exam_type).await?;
+
+        Ok(ExamTypeResponse {
+            id: created.id,
+            name: created.name,
+            description: created.description,
+            created_at: created.created_at,
+        })
+    }
+
+    async fn get_exam_type(&self, id: Uuid) -> Result<ExamTypeResponse, TestManagementError> {
+        let exam_type = self
+            .exam_type_repo
+            .find_by_id(id)
+            .await?
+            .ok_or(TestManagementError::ExamTypeNotFound)?;
+
+        Ok(ExamTypeResponse {
+            id: exam_type.id,
+            name: exam_type.name,
+            description: exam_type.description,
+            created_at: exam_type.created_at,
+        })
+    }
+
+    async fn list_exam_types(&self) -> Result<Vec<ExamTypeResponse>, TestManagementError> {
+        let exam_types = self.exam_type_repo.list_all().await?;
+
+        Ok(exam_types
+            .into_iter()
+            .map(|et| ExamTypeResponse {
+                id: et.id,
+                name: et.name,
+                description: et.description,
+                created_at: et.created_at,
+            })
+            .collect())
+    }
+
+    async fn update_exam_type(
+        &self,
+        id: Uuid,
+        request: UpdateExamTypeRequest,
+    ) -> Result<ExamTypeResponse, TestManagementError> {
+        let mut exam_type = self
+            .exam_type_repo
+            .find_by_id(id)
+            .await?
+            .ok_or(TestManagementError::ExamTypeNotFound)?;
+
+        if let Some(name) = request.name {
+            exam_type.name = name;
+        }
+        if let Some(description) = request.description {
+            exam_type.description = Some(description);
+        }
+
+        let updated = self.exam_type_repo.update(&exam_type).await?;
+
+        Ok(ExamTypeResponse {
+            id: updated.id,
+            name: updated.name,
+            description: updated.description,
+            created_at: updated.created_at,
+        })
+    }
+
+    async fn delete_exam_type(&self, id: Uuid) -> Result<(), TestManagementError> {
+        self.exam_type_repo
+            .delete(id)
+            .await
+            .map_err(|_| TestManagementError::ExamTypeNotFound)?;
+        Ok(())
+    }
+
+    async fn create_subject(
+        &self,
+        request: CreateSubjectRequest,
+    ) -> Result<SubjectResponse, TestManagementError> {
+        // Verify exam type exists
+        self.exam_type_repo
+            .find_by_id(request.exam_type_id)
+            .await?
+            .ok_or(TestManagementError::ExamTypeNotFound)?;
+
+        let subject = Subject::new(request.name, request.exam_type_id);
+        let created = self.subject_repo.create(&subject).await?;
+
+        Ok(SubjectResponse {
+            id: created.id,
+            name: created.name,
+            exam_type_id: created.exam_type_id,
+            created_at: created.created_at,
+        })
+    }
+
+    async fn get_subject(&self, id: Uuid) -> Result<SubjectResponse, TestManagementError> {
+        let subject = self
+            .subject_repo
+            .find_by_id(id)
+            .await?
+            .ok_or(TestManagementError::SubjectNotFound)?;
+
+        Ok(SubjectResponse {
+            id: subject.id,
+            name: subject.name,
+            exam_type_id: subject.exam_type_id,
+            created_at: subject.created_at,
+        })
+    }
+
+    async fn list_subjects_by_exam_type(
+        &self,
+        exam_type_id: Uuid,
+    ) -> Result<Vec<SubjectResponse>, TestManagementError> {
+        let subjects = self.subject_repo.find_by_exam_type_id(exam_type_id).await?;
+
+        Ok(subjects
+            .into_iter()
+            .map(|s| SubjectResponse {
+                id: s.id,
+                name: s.name,
+                exam_type_id: s.exam_type_id,
+                created_at: s.created_at,
+            })
+            .collect())
+    }
+
+    async fn update_subject(
+        &self,
+        id: Uuid,
+        request: UpdateSubjectRequest,
+    ) -> Result<SubjectResponse, TestManagementError> {
+        let mut subject = self
+            .subject_repo
+            .find_by_id(id)
+            .await?
+            .ok_or(TestManagementError::SubjectNotFound)?;
+
+        if let Some(name) = request.name {
+            subject.name = name;
+        }
+        if let Some(exam_type_id) = request.exam_type_id {
+            // Verify exam type exists
+            self.exam_type_repo
+                .find_by_id(exam_type_id)
+                .await?
+                .ok_or(TestManagementError::ExamTypeNotFound)?;
+            subject.exam_type_id = exam_type_id;
+        }
+
+        let updated = self.subject_repo.update(&subject).await?;
+
+        Ok(SubjectResponse {
+            id: updated.id,
+            name: updated.name,
+            exam_type_id: updated.exam_type_id,
+            created_at: updated.created_at,
+        })
+    }
+
+    async fn delete_subject(&self, id: Uuid) -> Result<(), TestManagementError> {
+        self.subject_repo
+            .delete(id)
+            .await
+            .map_err(|_| TestManagementError::SubjectNotFound)?;
+        Ok(())
+    }
+
+    async fn create_test_book(
+        &self,
+        request: CreateTestBookRequest,
+    ) -> Result<TestBookResponse, TestManagementError> {
+        // Verify exam type and subject exist
+        self.exam_type_repo
+            .find_by_id(request.exam_type_id)
+            .await?
+            .ok_or(TestManagementError::ExamTypeNotFound)?;
+        self.subject_repo
+            .find_by_id(request.subject_id)
+            .await?
+            .ok_or(TestManagementError::SubjectNotFound)?;
+
+        let test_book = TestBook::new(
+            request.name,
+            request.exam_type_id,
+            request.subject_id,
+            request.published_year,
+        );
+        let created = self.test_book_repo.create(&test_book).await?;
+
+        Ok(TestBookResponse {
+            id: created.id,
+            name: created.name,
+            exam_type_id: created.exam_type_id,
+            subject_id: created.subject_id,
+            published_year: created.published_year,
+            created_at: created.created_at,
+        })
+    }
+
+    async fn get_test_book(&self, id: Uuid) -> Result<TestBookResponse, TestManagementError> {
+        let test_book = self
+            .test_book_repo
+            .find_by_id(id)
+            .await?
+            .ok_or(TestManagementError::TestBookNotFound)?;
+
+        Ok(TestBookResponse {
+            id: test_book.id,
+            name: test_book.name,
+            exam_type_id: test_book.exam_type_id,
+            subject_id: test_book.subject_id,
+            published_year: test_book.published_year,
+            created_at: test_book.created_at,
+        })
+    }
+
+    async fn list_test_books_by_subject(
+        &self,
+        subject_id: Uuid,
+    ) -> Result<Vec<TestBookResponse>, TestManagementError> {
+        let test_books = self.test_book_repo.find_by_subject_id(subject_id).await?;
+
+        Ok(test_books
+            .into_iter()
+            .map(|tb| TestBookResponse {
+                id: tb.id,
+                name: tb.name,
+                exam_type_id: tb.exam_type_id,
+                subject_id: tb.subject_id,
+                published_year: tb.published_year,
+                created_at: tb.created_at,
+            })
+            .collect())
+    }
+
+    async fn update_test_book(
+        &self,
+        id: Uuid,
+        request: UpdateTestBookRequest,
+    ) -> Result<TestBookResponse, TestManagementError> {
+        let mut test_book = self
+            .test_book_repo
+            .find_by_id(id)
+            .await?
+            .ok_or(TestManagementError::TestBookNotFound)?;
+
+        if let Some(name) = request.name {
+            test_book.name = name;
+        }
+        if let Some(exam_type_id) = request.exam_type_id {
+            self.exam_type_repo
+                .find_by_id(exam_type_id)
+                .await?
+                .ok_or(TestManagementError::ExamTypeNotFound)?;
+            test_book.exam_type_id = exam_type_id;
+        }
+        if let Some(subject_id) = request.subject_id {
+            self.subject_repo
+                .find_by_id(subject_id)
+                .await?
+                .ok_or(TestManagementError::SubjectNotFound)?;
+            test_book.subject_id = subject_id;
+        }
+        if let Some(published_year) = request.published_year {
+            test_book.published_year = published_year;
+        }
+
+        let updated = self.test_book_repo.update(&test_book).await?;
+
+        Ok(TestBookResponse {
+            id: updated.id,
+            name: updated.name,
+            exam_type_id: updated.exam_type_id,
+            subject_id: updated.subject_id,
+            published_year: updated.published_year,
+            created_at: updated.created_at,
+        })
+    }
+
+    async fn delete_test_book(&self, id: Uuid) -> Result<(), TestManagementError> {
+        self.test_book_repo
+            .delete(id)
+            .await
+            .map_err(|_| TestManagementError::TestBookNotFound)?;
+        Ok(())
+    }
+
+    async fn create_practice_test(
+        &self,
+        request: CreatePracticeTestRequest,
+    ) -> Result<PracticeTestResponse, TestManagementError> {
+        // Verify test book exists
+        self.test_book_repo
+            .find_by_id(request.test_book_id)
+            .await?
+            .ok_or(TestManagementError::TestBookNotFound)?;
+
+        let practice_test = PracticeTest::new(
+            request.name,
+            request.test_number,
+            request.question_count,
+            request.answer_key,
+            request.test_book_id,
+        );
+        let created = self.practice_test_repo.create(&practice_test).await?;
+
+        Ok(PracticeTestResponse {
+            id: created.id,
+            name: created.name,
+            test_number: created.test_number,
+            question_count: created.question_count,
+            answer_key: created.answer_key,
+            test_book_id: created.test_book_id,
+            created_at: created.created_at,
+        })
+    }
+
+    async fn get_practice_test(&self, id: Uuid) -> Result<PracticeTestResponse, TestManagementError> {
+        let practice_test = self
+            .practice_test_repo
+            .find_by_id(id)
+            .await?
+            .ok_or(TestManagementError::PracticeTestNotFound)?;
+
+        Ok(PracticeTestResponse {
+            id: practice_test.id,
+            name: practice_test.name,
+            test_number: practice_test.test_number,
+            question_count: practice_test.question_count,
+            answer_key: practice_test.answer_key,
+            test_book_id: practice_test.test_book_id,
+            created_at: practice_test.created_at,
+        })
+    }
+
+    async fn list_practice_tests_by_test_book(
+        &self,
+        test_book_id: Uuid,
+    ) -> Result<Vec<PracticeTestResponse>, TestManagementError> {
+        let practice_tests = self
+            .practice_test_repo
+            .find_by_test_book_id(test_book_id)
+            .await?;
+
+        Ok(practice_tests
+            .into_iter()
+            .map(|pt| PracticeTestResponse {
+                id: pt.id,
+                name: pt.name,
+                test_number: pt.test_number,
+                question_count: pt.question_count,
+                answer_key: pt.answer_key,
+                test_book_id: pt.test_book_id,
+                created_at: pt.created_at,
+            })
+            .collect())
+    }
+
+    async fn update_practice_test(
+        &self,
+        id: Uuid,
+        request: UpdatePracticeTestRequest,
+    ) -> Result<PracticeTestResponse, TestManagementError> {
+        let mut practice_test = self
+            .practice_test_repo
+            .find_by_id(id)
+            .await?
+            .ok_or(TestManagementError::PracticeTestNotFound)?;
+
+        if let Some(name) = request.name {
+            practice_test.name = name;
+        }
+        if let Some(test_number) = request.test_number {
+            practice_test.test_number = test_number;
+        }
+        if let Some(question_count) = request.question_count {
+            practice_test.question_count = question_count;
+        }
+        if let Some(answer_key) = request.answer_key {
+            practice_test.answer_key = answer_key;
+        }
+        if let Some(test_book_id) = request.test_book_id {
+            self.test_book_repo
+                .find_by_id(test_book_id)
+                .await?
+                .ok_or(TestManagementError::TestBookNotFound)?;
+            practice_test.test_book_id = test_book_id;
+        }
+
+        let updated = self.practice_test_repo.update(&practice_test).await?;
+
+        Ok(PracticeTestResponse {
+            id: updated.id,
+            name: updated.name,
+            test_number: updated.test_number,
+            question_count: updated.question_count,
+            answer_key: updated.answer_key,
+            test_book_id: updated.test_book_id,
+            created_at: updated.created_at,
+        })
+    }
+
+    async fn delete_practice_test(&self, id: Uuid) -> Result<(), TestManagementError> {
+        self.practice_test_repo
+            .delete(id)
+            .await
+            .map_err(|_| TestManagementError::PracticeTestNotFound)?;
+        Ok(())
+    }
+}
+

@@ -6,7 +6,9 @@ use axum::{
 use serde::Serialize;
 use thiserror::Error;
 
-use application::services::AuthError;
+use application::services::{
+    AuthError, ResultError, TestManagementError, TestSolvingError,
+};
 use infrastructure::security::JwtError;
 
 /// Application error type that implements IntoResponse for Axum.
@@ -55,6 +57,9 @@ pub enum AppError {
     #[error("Conflict: {0}")]
     Conflict(String),
 
+    #[error("Cannot retake test yet")]
+    CannotRetakeYet,
+
     // Server errors
     #[error("Internal server error")]
     InternalServerError,
@@ -96,6 +101,7 @@ impl AppError {
             AppError::ValidationError(_) => "VALIDATION_ERROR",
             AppError::NotFound(_) => "NOT_FOUND",
             AppError::Conflict(_) => "CONFLICT",
+            AppError::CannotRetakeYet => "CANNOT_RETAKE_YET",
             AppError::InternalServerError => "INTERNAL_ERROR",
             AppError::ServiceUnavailable => "SERVICE_UNAVAILABLE",
         }
@@ -117,6 +123,7 @@ impl AppError {
             AppError::ValidationError(_) => StatusCode::BAD_REQUEST,
             AppError::NotFound(_) => StatusCode::NOT_FOUND,
             AppError::Conflict(_) => StatusCode::CONFLICT,
+            AppError::CannotRetakeYet => StatusCode::FORBIDDEN,
             AppError::InternalServerError => StatusCode::INTERNAL_SERVER_ERROR,
             AppError::ServiceUnavailable => StatusCode::SERVICE_UNAVAILABLE,
         }
@@ -165,6 +172,42 @@ impl From<JwtError> for AppError {
             JwtError::TokenExpired => AppError::TokenExpired,
             JwtError::InvalidToken | JwtError::DecodingError(_) => AppError::InvalidToken,
             JwtError::EncodingError(_) => AppError::InternalServerError,
+        }
+    }
+}
+
+impl From<TestManagementError> for AppError {
+    fn from(err: TestManagementError) -> Self {
+        match err {
+            TestManagementError::ExamTypeNotFound => AppError::NotFound("Exam type not found".to_string()),
+            TestManagementError::SubjectNotFound => AppError::NotFound("Subject not found".to_string()),
+            TestManagementError::TestBookNotFound => AppError::NotFound("Test book not found".to_string()),
+            TestManagementError::PracticeTestNotFound => AppError::NotFound("Practice test not found".to_string()),
+            TestManagementError::DuplicateExamTypeName => AppError::Conflict("Exam type name already exists".to_string()),
+            TestManagementError::DuplicateSubjectName => AppError::Conflict("Subject name already exists for this exam type".to_string()),
+            TestManagementError::DuplicateTestNumber => AppError::Conflict("Test number already exists for this test book".to_string()),
+            TestManagementError::InternalError(_) => AppError::InternalServerError,
+        }
+    }
+}
+
+impl From<TestSolvingError> for AppError {
+    fn from(err: TestSolvingError) -> Self {
+        match err {
+            TestSolvingError::PracticeTestNotFound => AppError::NotFound("Practice test not found".to_string()),
+            TestSolvingError::CannotRetakeYet => AppError::CannotRetakeYet,
+            TestSolvingError::AnswerKeyLengthMismatch => AppError::ValidationError("Answer key length mismatch".to_string()),
+            TestSolvingError::UserAnswersLengthMismatch => AppError::ValidationError("User answers length mismatch".to_string()),
+            TestSolvingError::InternalError(_) => AppError::InternalServerError,
+        }
+    }
+}
+
+impl From<ResultError> for AppError {
+    fn from(err: ResultError) -> Self {
+        match err {
+            ResultError::TestResultNotFound => AppError::NotFound("Test result not found".to_string()),
+            ResultError::InternalError(_) => AppError::InternalServerError,
         }
     }
 }

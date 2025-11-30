@@ -1,10 +1,16 @@
 use utoipa::openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme};
 use utoipa::{Modify, OpenApi};
 
-use crate::dto::request::{LoginRequest, LogoutRequest, RefreshTokenRequest, RegisterRequest};
+use crate::dto::request::{
+    CreateExamTypeRequest, CreatePracticeTestRequest, CreateSubjectRequest, CreateTestBookRequest,
+    LoginRequest, LogoutRequest, RefreshTokenRequest, RegisterRequest, SolveTestRequest,
+    UpdateExamTypeRequest, UpdatePracticeTestRequest, UpdateSubjectRequest, UpdateTestBookRequest,
+};
 use crate::dto::response::{
-    AuthResponse, HealthCheckResult, HealthChecks, LivenessResponse, MessageResponse,
-    ReadinessResponse, RegisterResponse, TokenResponse, UserResponse,
+    AuthResponse, ExamTypeResponse, HealthCheckResult, HealthChecks, LivenessResponse,
+    MessageResponse, PaginationInfo, PracticeTestResponse, ReadinessResponse, RegisterResponse,
+    SolveTestResponse, SubjectResponse, TestBookResponse, TestResultResponse, TokenResponse,
+    UserResponse,
 };
 use crate::errors::{ErrorDetail, ErrorResponse};
 
@@ -32,6 +38,29 @@ use crate::errors::{ErrorDetail, ErrorResponse};
         crate::handlers::get_current_user,
         crate::handlers::liveness,
         crate::handlers::readiness,
+        crate::handlers::create_exam_type,
+        crate::handlers::get_exam_type,
+        crate::handlers::list_exam_types,
+        crate::handlers::update_exam_type,
+        crate::handlers::delete_exam_type,
+        crate::handlers::create_subject,
+        crate::handlers::get_subject,
+        crate::handlers::list_subjects,
+        crate::handlers::update_subject,
+        crate::handlers::delete_subject,
+        crate::handlers::create_test_book,
+        crate::handlers::get_test_book,
+        crate::handlers::list_test_books,
+        crate::handlers::update_test_book,
+        crate::handlers::delete_test_book,
+        crate::handlers::create_practice_test,
+        crate::handlers::get_practice_test,
+        crate::handlers::list_practice_tests,
+        crate::handlers::update_practice_test,
+        crate::handlers::delete_practice_test,
+        crate::handlers::solve_test,
+        crate::handlers::get_result,
+        crate::handlers::list_my_results,
     ),
     components(
         schemas(
@@ -40,12 +69,28 @@ use crate::errors::{ErrorDetail, ErrorResponse};
             LoginRequest,
             RefreshTokenRequest,
             LogoutRequest,
+            CreateExamTypeRequest,
+            UpdateExamTypeRequest,
+            CreateSubjectRequest,
+            UpdateSubjectRequest,
+            CreateTestBookRequest,
+            UpdateTestBookRequest,
+            CreatePracticeTestRequest,
+            UpdatePracticeTestRequest,
+            SolveTestRequest,
             // Response schemas
             RegisterResponse,
             AuthResponse,
             TokenResponse,
             UserResponse,
             MessageResponse,
+            ExamTypeResponse,
+            SubjectResponse,
+            TestBookResponse,
+            PracticeTestResponse,
+            TestResultResponse,
+            SolveTestResponse,
+            PaginationInfo,
             LivenessResponse,
             ReadinessResponse,
             HealthChecks,
@@ -58,7 +103,9 @@ use crate::errors::{ErrorDetail, ErrorResponse};
     modifiers(&SecurityAddon),
     tags(
         (name = "auth", description = "Authentication endpoints"),
-        (name = "health", description = "Health check endpoints")
+        (name = "health", description = "Health check endpoints"),
+        (name = "admin", description = "Admin endpoints (requires authentication)"),
+        (name = "tests", description = "Test management and solving endpoints")
     )
 )]
 pub struct ApiDoc;

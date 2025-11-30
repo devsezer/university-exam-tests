@@ -1,6 +1,8 @@
 mod auth_response;
 mod health_response;
+mod test_response;
 
 pub use auth_response::*;
 pub use health_response::*;
+pub use test_response::*;
 

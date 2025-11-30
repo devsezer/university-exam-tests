@@ -1,8 +1,15 @@
 use std::sync::Arc;
 
-use application::services::{AuthService, AuthServiceImpl, JwtOperations, PasswordOperations};
+use application::services::{
+    AuthService, AuthServiceImpl, JwtOperations, PasswordOperations, ResultService,
+    ResultServiceImpl, TestManagementService, TestManagementServiceImpl, TestSolvingService,
+    TestSolvingServiceImpl,
+};
 use infrastructure::config::Settings;
-use infrastructure::database::repositories::{PgRefreshTokenRepository, PgUserRepository};
+use infrastructure::database::repositories::{
+    PgExamTypeRepository, PgPracticeTestRepository, PgRefreshTokenRepository,
+    PgSubjectRepository, PgTestBookRepository, PgTestResultRepository, PgUserRepository,
+};
 use infrastructure::database::DatabasePool;
 use infrastructure::security::{JwtConfig, JwtService, PasswordService};
 use uuid::Uuid;
@@ -18,6 +25,12 @@ pub struct AppState {
     pub password_service: Arc<PasswordService>,
     /// Authentication service
     pub auth_service: Arc<dyn AuthService>,
+    /// Test management service
+    pub test_management_service: Arc<dyn TestManagementService>,
+    /// Test solving service
+    pub test_solving_service: Arc<dyn TestSolvingService>,
+    /// Result service
+    pub result_service: Arc<dyn ResultService>,
     /// Application settings
     pub settings: Arc<Settings>,
 }
@@ -39,6 +52,11 @@ impl AppState {
         // Initialize repositories
         let user_repo = Arc::new(PgUserRepository::new(db_pool.clone()));
         let refresh_token_repo = Arc::new(PgRefreshTokenRepository::new(db_pool.clone()));
+        let exam_type_repo = Arc::new(PgExamTypeRepository::new(db_pool.clone()));
+        let subject_repo = Arc::new(PgSubjectRepository::new(db_pool.clone()));
+        let test_book_repo = Arc::new(PgTestBookRepository::new(db_pool.clone()));
+        let practice_test_repo = Arc::new(PgPracticeTestRepository::new(db_pool.clone()));
+        let test_result_repo = Arc::new(PgTestResultRepository::new(db_pool.clone()));
 
         // Create adapters for the auth service
         let jwt_adapter = Arc::new(JwtAdapter(jwt_service.clone()));
@@ -52,11 +70,35 @@ impl AppState {
             password_adapter,
         ));
 
+        // Initialize test management service
+        let test_management_service: Arc<dyn TestManagementService> = Arc::new(
+            TestManagementServiceImpl::new(
+                exam_type_repo.clone(),
+                subject_repo.clone(),
+                test_book_repo.clone(),
+                practice_test_repo.clone(),
+            ),
+        );
+
+        // Initialize test solving service
+        let test_solving_service: Arc<dyn TestSolvingService> =
+            Arc::new(TestSolvingServiceImpl::new(
+                practice_test_repo.clone(),
+                test_result_repo.clone(),
+            ));
+
+        // Initialize result service
+        let result_service: Arc<dyn ResultService> =
+            Arc::new(ResultServiceImpl::new(test_result_repo.clone()));
+
         Self {
             db_pool,
             jwt_service,
             password_service,
             auth_service,
+            test_management_service,
+            test_solving_service,
+            result_service,
             settings: Arc::new(settings),
         }
     }

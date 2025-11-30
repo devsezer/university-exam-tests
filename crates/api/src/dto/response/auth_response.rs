@@ -126,6 +126,22 @@ impl MessageResponse {
     }
 }
 
+/// Pagination information.
+#[derive(Debug, Serialize, ToSchema)]
+pub struct PaginationInfo {
+    pub page: u32,
+    pub per_page: u32,
+    pub total_items: u64,
+    pub total_pages: u32,
+}
+
+/// Paginated response wrapper.
+#[derive(Debug, Serialize, ToSchema)]
+pub struct PaginatedResponse<T: Serialize> {
+    pub items: Vec<T>,
+    pub pagination: PaginationInfo,
+}
+
 // Conversion from application layer DTOs
 
 impl From<application::dto::RegisterResponse> for RegisterResponse {
