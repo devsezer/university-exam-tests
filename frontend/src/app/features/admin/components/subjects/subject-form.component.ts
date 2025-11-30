@@ -37,7 +37,7 @@ import { ErrorMessageComponent } from '../../../../shared/components/error-messa
               <select id="exam_type_id" 
                       formControlName="exam_type_id"
                       [disabled]="isEditMode()"
-                      class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm disabled:bg-gray-100">
+                      class="mt-1 block w-full px-4 py-3 rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm disabled:bg-gray-100">
                 <option [value]="null">Sınav türü seçiniz</option>
                 <option *ngFor="let examType of examTypes()" [value]="examType.id">
                   {{ examType.name }}
@@ -54,7 +54,7 @@ import { ErrorMessageComponent } from '../../../../shared/components/error-messa
               <input id="name" 
                      type="text" 
                      formControlName="name"
-                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                     class="mt-1 block w-full px-4 py-3 rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
                      placeholder="Örn: Matematik, Türkçe">
               <div *ngIf="form.get('name')?.invalid && form.get('name')?.touched" 
                    class="mt-1 text-sm text-red-600">

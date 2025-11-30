@@ -37,7 +37,7 @@ import { ErrorMessageComponent } from '../../../../shared/components/error-messa
               <select id="exam_type_id" 
                       formControlName="exam_type_id"
                       (change)="onExamTypeChange()"
-                      class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
+                      class="mt-1 block w-full px-4 py-3 rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
                 <option [value]="null">Sınav türü seçiniz</option>
                 <option *ngFor="let examType of examTypes()" [value]="examType.id">
                   {{ examType.name }}
@@ -54,7 +54,7 @@ import { ErrorMessageComponent } from '../../../../shared/components/error-messa
               <select id="subject_id" 
                       formControlName="subject_id"
                       [disabled]="!form.get('exam_type_id')?.value || isLoadingSubjects()"
-                      class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm disabled:bg-gray-100">
+                      class="mt-1 block w-full px-4 py-3 rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm disabled:bg-gray-100">
                 <option [value]="null">Ders konusu seçiniz</option>
                 <option *ngFor="let subject of filteredSubjects()" [value]="subject.id">
                   {{ subject.name }}
@@ -72,7 +72,7 @@ import { ErrorMessageComponent } from '../../../../shared/components/error-messa
               <input id="name" 
                      type="text" 
                      formControlName="name"
-                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                     class="mt-1 block w-full px-4 py-3 rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
                      placeholder="Örn: Limit Yayınları TYT Matematik">
               <div *ngIf="form.get('name')?.invalid && form.get('name')?.touched" 
                    class="mt-1 text-sm text-red-600">
@@ -87,7 +87,7 @@ import { ErrorMessageComponent } from '../../../../shared/components/error-messa
                      formControlName="published_year"
                      min="2000"
                      max="2100"
-                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                     class="mt-1 block w-full px-4 py-3 rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
                      placeholder="2024">
               <div *ngIf="form.get('published_year')?.invalid && form.get('published_year')?.touched" 
                    class="mt-1 text-sm text-red-600">

@@ -37,7 +37,7 @@ import { ErrorMessageComponent } from '../../../../shared/components/error-messa
               <input id="username" 
                      type="text" 
                      formControlName="username"
-                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                     class="mt-1 block w-full px-4 py-3 rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
                      placeholder="Kullanıcı adı">
               <div *ngIf="form.get('username')?.invalid && form.get('username')?.touched" 
                    class="mt-1 text-sm text-red-600">
@@ -50,7 +50,7 @@ import { ErrorMessageComponent } from '../../../../shared/components/error-messa
               <input id="email" 
                      type="email" 
                      formControlName="email"
-                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                     class="mt-1 block w-full px-4 py-3 rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
                      placeholder="email@example.com">
               <div *ngIf="form.get('email')?.invalid && form.get('email')?.touched" 
                    class="mt-1 text-sm text-red-600">

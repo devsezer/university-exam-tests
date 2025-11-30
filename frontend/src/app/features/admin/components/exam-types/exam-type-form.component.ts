@@ -37,7 +37,7 @@ import { ErrorMessageComponent } from '../../../../shared/components/error-messa
               <input id="name" 
                      type="text" 
                      formControlName="name"
-                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                     class="mt-1 block w-full px-4 py-3 rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
                      placeholder="Örn: TYT, AYT">
               <div *ngIf="form.get('name')?.invalid && form.get('name')?.touched" 
                    class="mt-1 text-sm text-red-600">
@@ -50,7 +50,7 @@ import { ErrorMessageComponent } from '../../../../shared/components/error-messa
               <textarea id="description" 
                         formControlName="description"
                         rows="3"
-                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                        class="mt-1 block w-full px-4 py-3 rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
                         placeholder="Sınav türü açıklaması"></textarea>
             </div>
 

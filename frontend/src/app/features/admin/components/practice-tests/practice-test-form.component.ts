@@ -36,7 +36,7 @@ import { ErrorMessageComponent } from '../../../../shared/components/error-messa
               <label for="test_book_id" class="block text-sm font-medium text-gray-700">Test Kitabı *</label>
               <select id="test_book_id" 
                       formControlName="test_book_id"
-                      class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
+                      class="mt-1 block w-full px-4 py-3 rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
                 <option [value]="null" disabled>Test kitabı seçiniz</option>
                 @for (testBook of testBooks(); track testBook.id) {
                   <option [value]="testBook.id">
@@ -55,7 +55,7 @@ import { ErrorMessageComponent } from '../../../../shared/components/error-messa
               <input id="name" 
                      type="text" 
                      formControlName="name"
-                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                     class="mt-1 block w-full px-4 py-3 rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
                      placeholder="Örn: Deneme 1">
               <div *ngIf="form.get('name')?.invalid && form.get('name')?.touched" 
                    class="mt-1 text-sm text-red-600">
@@ -70,7 +70,7 @@ import { ErrorMessageComponent } from '../../../../shared/components/error-messa
                        type="number" 
                        formControlName="test_number"
                        min="1"
-                       class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                       class="mt-1 block w-full px-4 py-3 rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
                        placeholder="1">
                 <div *ngIf="form.get('test_number')?.invalid && form.get('test_number')?.touched" 
                      class="mt-1 text-sm text-red-600">
@@ -84,7 +84,7 @@ import { ErrorMessageComponent } from '../../../../shared/components/error-messa
                        type="number" 
                        formControlName="question_count"
                        min="1"
-                       class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                       class="mt-1 block w-full px-4 py-3 rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
                        placeholder="40">
                 <div *ngIf="form.get('question_count')?.invalid && form.get('question_count')?.touched" 
                      class="mt-1 text-sm text-red-600">
@@ -98,7 +98,7 @@ import { ErrorMessageComponent } from '../../../../shared/components/error-messa
               <textarea id="answer_key" 
                         formControlName="answer_key"
                         rows="4"
-                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm font-mono"
+                        class="mt-1 block w-full px-4 py-3 rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm font-mono"
                         placeholder="ABCDABCDABCD... (Her soru için A, B, C, D, E veya _)"></textarea>
               <div class="mt-1 text-sm text-gray-500">
                 Her soru için A, B, C, D, E harflerinden biri veya boş için _ kullanın. Örnek: ABCD_BCD...
