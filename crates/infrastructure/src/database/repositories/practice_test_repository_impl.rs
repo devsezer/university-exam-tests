@@ -28,6 +28,7 @@ struct PracticeTestRow {
     question_count: i32,
     answer_key: String,
     test_book_id: Uuid,
+    subject_id: Uuid,
     created_at: DateTime<Utc>,
 }
 
@@ -40,6 +41,7 @@ impl From<PracticeTestRow> for PracticeTest {
             question_count: row.question_count,
             answer_key: row.answer_key,
             test_book_id: row.test_book_id,
+            subject_id: row.subject_id,
             created_at: row.created_at,
         }
     }
@@ -50,9 +52,9 @@ impl PracticeTestRepository for PgPracticeTestRepository {
     async fn create(&self, practice_test: &PracticeTest) -> Result<PracticeTest, DomainError> {
         let row = sqlx::query_as::<_, PracticeTestRow>(
             r#"
-            INSERT INTO practice_tests (id, name, test_number, question_count, answer_key, test_book_id, created_at)
-            VALUES ($1, $2, $3, $4, $5, $6, $7)
-            RETURNING id, name, test_number, question_count, answer_key, test_book_id, created_at
+            INSERT INTO practice_tests (id, name, test_number, question_count, answer_key, test_book_id, subject_id, created_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            RETURNING id, name, test_number, question_count, answer_key, test_book_id, subject_id, created_at
             "#,
         )
         .bind(practice_test.id)
@@ -61,6 +63,7 @@ impl PracticeTestRepository for PgPracticeTestRepository {
         .bind(practice_test.question_count)
         .bind(&practice_test.answer_key)
         .bind(practice_test.test_book_id)
+        .bind(practice_test.subject_id)
         .bind(practice_test.created_at)
         .fetch_one(&self.pool)
         .await
@@ -72,7 +75,7 @@ impl PracticeTestRepository for PgPracticeTestRepository {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<PracticeTest>, DomainError> {
         let row = sqlx::query_as::<_, PracticeTestRow>(
             r#"
-            SELECT id, name, test_number, question_count, answer_key, test_book_id, created_at
+            SELECT id, name, test_number, question_count, answer_key, test_book_id, subject_id, created_at
             FROM practice_tests
             WHERE id = $1
             "#,
@@ -88,7 +91,7 @@ impl PracticeTestRepository for PgPracticeTestRepository {
     async fn find_by_test_book_id(&self, test_book_id: Uuid) -> Result<Vec<PracticeTest>, DomainError> {
         let rows = sqlx::query_as::<_, PracticeTestRow>(
             r#"
-            SELECT id, name, test_number, question_count, answer_key, test_book_id, created_at
+            SELECT id, name, test_number, question_count, answer_key, test_book_id, subject_id, created_at
             FROM practice_tests
             WHERE test_book_id = $1
             ORDER BY test_number ASC
@@ -106,9 +109,9 @@ impl PracticeTestRepository for PgPracticeTestRepository {
         let row = sqlx::query_as::<_, PracticeTestRow>(
             r#"
             UPDATE practice_tests
-            SET name = $2, test_number = $3, question_count = $4, answer_key = $5, test_book_id = $6
+            SET name = $2, test_number = $3, question_count = $4, answer_key = $5, test_book_id = $6, subject_id = $7
             WHERE id = $1
-            RETURNING id, name, test_number, question_count, answer_key, test_book_id, created_at
+            RETURNING id, name, test_number, question_count, answer_key, test_book_id, subject_id, created_at
             "#,
         )
         .bind(practice_test.id)
@@ -117,6 +120,7 @@ impl PracticeTestRepository for PgPracticeTestRepository {
         .bind(practice_test.question_count)
         .bind(&practice_test.answer_key)
         .bind(practice_test.test_book_id)
+        .bind(practice_test.subject_id)
         .fetch_one(&self.pool)
         .await
         .map_err(|e| DomainError::DatabaseError(e.to_string()))?;
@@ -137,7 +141,7 @@ impl PracticeTestRepository for PgPracticeTestRepository {
     async fn list_all(&self) -> Result<Vec<PracticeTest>, DomainError> {
         let rows = sqlx::query_as::<_, PracticeTestRow>(
             r#"
-            SELECT id, name, test_number, question_count, answer_key, test_book_id, created_at
+            SELECT id, name, test_number, question_count, answer_key, test_book_id, subject_id, created_at
             FROM practice_tests
             ORDER BY created_at DESC
             "#,

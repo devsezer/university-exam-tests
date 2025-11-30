@@ -769,12 +769,28 @@ where
             .await?
             .ok_or(TestManagementError::TestBookNotFound)?;
 
+        // Verify subject exists
+        self.subject_repo
+            .find_by_id(request.subject_id)
+            .await?
+            .ok_or(TestManagementError::SubjectNotFound)?;
+
+        // Verify subject belongs to test book
+        let test_book_subjects = self
+            .test_book_subject_repo
+            .find_subject_ids_by_test_book_id(request.test_book_id)
+            .await?;
+        if !test_book_subjects.contains(&request.subject_id) {
+            return Err(TestManagementError::SubjectNotFound);
+        }
+
         let practice_test = PracticeTest::new(
             request.name,
             request.test_number,
             request.question_count,
             request.answer_key,
             request.test_book_id,
+            request.subject_id,
         );
         let created = self.practice_test_repo.create(&practice_test).await?;
 
@@ -785,6 +801,7 @@ where
             question_count: created.question_count,
             answer_key: created.answer_key,
             test_book_id: created.test_book_id,
+            subject_id: created.subject_id,
             created_at: created.created_at,
         })
     }
@@ -803,6 +820,7 @@ where
             question_count: practice_test.question_count,
             answer_key: practice_test.answer_key,
             test_book_id: practice_test.test_book_id,
+            subject_id: practice_test.subject_id,
             created_at: practice_test.created_at,
         })
     }
@@ -825,6 +843,7 @@ where
                 question_count: pt.question_count,
                 answer_key: pt.answer_key,
                 test_book_id: pt.test_book_id,
+                subject_id: pt.subject_id,
                 created_at: pt.created_at,
             })
             .collect())
@@ -842,6 +861,7 @@ where
                 question_count: pt.question_count,
                 answer_key: pt.answer_key,
                 test_book_id: pt.test_book_id,
+                subject_id: pt.subject_id,
                 created_at: pt.created_at,
             })
             .collect())
@@ -857,6 +877,9 @@ where
             .find_by_id(id)
             .await?
             .ok_or(TestManagementError::PracticeTestNotFound)?;
+
+        // Determine which test_book_id to use for subject validation
+        let test_book_id_for_validation = request.test_book_id.unwrap_or(practice_test.test_book_id);
 
         if let Some(name) = request.name {
             practice_test.name = name;
@@ -877,6 +900,24 @@ where
                 .ok_or(TestManagementError::TestBookNotFound)?;
             practice_test.test_book_id = test_book_id;
         }
+        if let Some(subject_id) = request.subject_id {
+            // Verify subject exists
+            self.subject_repo
+                .find_by_id(subject_id)
+                .await?
+                .ok_or(TestManagementError::SubjectNotFound)?;
+
+            // Verify subject belongs to test book
+            let test_book_subjects = self
+                .test_book_subject_repo
+                .find_subject_ids_by_test_book_id(test_book_id_for_validation)
+                .await?;
+            if !test_book_subjects.contains(&subject_id) {
+                return Err(TestManagementError::SubjectNotFound);
+            }
+
+            practice_test.subject_id = subject_id;
+        }
 
         let updated = self.practice_test_repo.update(&practice_test).await?;
 
@@ -887,6 +928,7 @@ where
             question_count: updated.question_count,
             answer_key: updated.answer_key,
             test_book_id: updated.test_book_id,
+            subject_id: updated.subject_id,
             created_at: updated.created_at,
         })
     }

@@ -71,6 +71,8 @@ pub struct PracticeTestResponse {
     pub answer_key: String,
     #[schema(example = "550e8400-e29b-41d4-a716-446655440001")]
     pub test_book_id: Uuid,
+    #[schema(example = "550e8400-e29b-41d4-a716-446655440002")]
+    pub subject_id: Uuid,
     pub created_at: DateTime<Utc>,
 }
 
@@ -163,6 +165,7 @@ impl From<application::dto::PracticeTestResponse> for PracticeTestResponse {
             question_count: dto.question_count,
             answer_key: dto.answer_key,
             test_book_id: dto.test_book_id,
+            subject_id: dto.subject_id,
             created_at: dto.created_at,
         }
     }

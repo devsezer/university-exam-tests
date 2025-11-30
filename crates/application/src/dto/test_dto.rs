@@ -116,6 +116,7 @@ pub struct PracticeTestResponse {
     pub question_count: i32,
     pub answer_key: String,
     pub test_book_id: Uuid,
+    pub subject_id: Uuid,
     pub created_at: DateTime<Utc>,
 }
 
@@ -130,6 +131,7 @@ pub struct CreatePracticeTestRequest {
     #[validate(length(min = 1, message = "Answer key is required"))]
     pub answer_key: String,
     pub test_book_id: Uuid,
+    pub subject_id: Uuid,
 }
 
 #[derive(Debug, Clone, Deserialize, Validate)]
@@ -143,6 +145,7 @@ pub struct UpdatePracticeTestRequest {
     #[validate(length(min = 1, message = "Answer key is required"))]
     pub answer_key: Option<String>,
     pub test_book_id: Option<Uuid>,
+    pub subject_id: Option<Uuid>,
 }
 
 // TestResult DTOs

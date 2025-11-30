@@ -113,6 +113,8 @@ pub struct CreatePracticeTestRequest {
     pub answer_key: String,
     #[schema(example = "550e8400-e29b-41d4-a716-446655440000")]
     pub test_book_id: Uuid,
+    #[schema(example = "550e8400-e29b-41d4-a716-446655440001")]
+    pub subject_id: Uuid,
 }
 
 /// Request body for updating a practice test.
@@ -132,6 +134,8 @@ pub struct UpdatePracticeTestRequest {
     pub answer_key: Option<String>,
     #[schema(example = "550e8400-e29b-41d4-a716-446655440000")]
     pub test_book_id: Option<Uuid>,
+    #[schema(example = "550e8400-e29b-41d4-a716-446655440001")]
+    pub subject_id: Option<Uuid>,
 }
 
 /// Request body for solving a test.
@@ -225,6 +229,7 @@ impl CreatePracticeTestRequest {
             question_count: self.question_count,
             answer_key: self.answer_key,
             test_book_id: self.test_book_id,
+            subject_id: self.subject_id,
         }
     }
 }
@@ -237,6 +242,7 @@ impl UpdatePracticeTestRequest {
             question_count: self.question_count,
             answer_key: self.answer_key,
             test_book_id: self.test_book_id,
+            subject_id: self.subject_id,
         }
     }
 }

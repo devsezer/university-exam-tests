@@ -17,6 +17,8 @@ pub struct PracticeTest {
     pub answer_key: String,
     /// ID of the test book this practice test belongs to
     pub test_book_id: Uuid,
+    /// ID of the subject this practice test belongs to
+    pub subject_id: Uuid,
     /// Timestamp when the practice test was created
     pub created_at: DateTime<Utc>,
 }
@@ -29,6 +31,7 @@ impl PracticeTest {
         question_count: i32,
         answer_key: String,
         test_book_id: Uuid,
+        subject_id: Uuid,
     ) -> Self {
         Self {
             id: Uuid::new_v4(),
@@ -37,6 +40,7 @@ impl PracticeTest {
             question_count,
             answer_key,
             test_book_id,
+            subject_id,
             created_at: Utc::now(),
         }
     }
