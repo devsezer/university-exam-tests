@@ -243,7 +243,11 @@ pub async fn list_subjects(
             .await
             .map_err(|e| AppError::from(e))?
     } else {
-        vec![] // Return empty if no exam_type_id provided
+        state
+            .test_management_service
+            .list_all_subjects()
+            .await
+            .map_err(|e| AppError::from(e))?
     };
 
     Ok(Json(ApiResponse::success(
@@ -394,7 +398,11 @@ pub async fn list_test_books(
             .await
             .map_err(|e| AppError::from(e))?
     } else {
-        vec![]
+        state
+            .test_management_service
+            .list_all_test_books()
+            .await
+            .map_err(|e| AppError::from(e))?
     };
 
     Ok(Json(ApiResponse::success(
@@ -545,7 +553,11 @@ pub async fn list_practice_tests(
             .await
             .map_err(|e| AppError::from(e))?
     } else {
-        vec![]
+        state
+            .test_management_service
+            .list_all_practice_tests()
+            .await
+            .map_err(|e| AppError::from(e))?
     };
 
     Ok(Json(ApiResponse::success(

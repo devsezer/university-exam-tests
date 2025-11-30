@@ -75,6 +75,7 @@ pub trait TestManagementService: Send + Sync {
         &self,
         exam_type_id: Uuid,
     ) -> Result<Vec<SubjectResponse>, TestManagementError>;
+    async fn list_all_subjects(&self) -> Result<Vec<SubjectResponse>, TestManagementError>;
     async fn update_subject(
         &self,
         id: Uuid,
@@ -92,6 +93,7 @@ pub trait TestManagementService: Send + Sync {
         &self,
         subject_id: Uuid,
     ) -> Result<Vec<TestBookResponse>, TestManagementError>;
+    async fn list_all_test_books(&self) -> Result<Vec<TestBookResponse>, TestManagementError>;
     async fn update_test_book(
         &self,
         id: Uuid,
@@ -109,6 +111,7 @@ pub trait TestManagementService: Send + Sync {
         &self,
         test_book_id: Uuid,
     ) -> Result<Vec<PracticeTestResponse>, TestManagementError>;
+    async fn list_all_practice_tests(&self) -> Result<Vec<PracticeTestResponse>, TestManagementError>;
     async fn update_practice_test(
         &self,
         id: Uuid,
@@ -299,6 +302,20 @@ where
             .collect())
     }
 
+    async fn list_all_subjects(&self) -> Result<Vec<SubjectResponse>, TestManagementError> {
+        let subjects = self.subject_repo.list_all().await?;
+
+        Ok(subjects
+            .into_iter()
+            .map(|s| SubjectResponse {
+                id: s.id,
+                name: s.name,
+                exam_type_id: s.exam_type_id,
+                created_at: s.created_at,
+            })
+            .collect())
+    }
+
     async fn update_subject(
         &self,
         id: Uuid,
@@ -394,6 +411,22 @@ where
         subject_id: Uuid,
     ) -> Result<Vec<TestBookResponse>, TestManagementError> {
         let test_books = self.test_book_repo.find_by_subject_id(subject_id).await?;
+
+        Ok(test_books
+            .into_iter()
+            .map(|tb| TestBookResponse {
+                id: tb.id,
+                name: tb.name,
+                exam_type_id: tb.exam_type_id,
+                subject_id: tb.subject_id,
+                published_year: tb.published_year,
+                created_at: tb.created_at,
+            })
+            .collect())
+    }
+
+    async fn list_all_test_books(&self) -> Result<Vec<TestBookResponse>, TestManagementError> {
+        let test_books = self.test_book_repo.list_all().await?;
 
         Ok(test_books
             .into_iter()
@@ -516,6 +549,23 @@ where
             .practice_test_repo
             .find_by_test_book_id(test_book_id)
             .await?;
+
+        Ok(practice_tests
+            .into_iter()
+            .map(|pt| PracticeTestResponse {
+                id: pt.id,
+                name: pt.name,
+                test_number: pt.test_number,
+                question_count: pt.question_count,
+                answer_key: pt.answer_key,
+                test_book_id: pt.test_book_id,
+                created_at: pt.created_at,
+            })
+            .collect())
+    }
+
+    async fn list_all_practice_tests(&self) -> Result<Vec<PracticeTestResponse>, TestManagementError> {
+        let practice_tests = self.practice_test_repo.list_all().await?;
 
         Ok(practice_tests
             .into_iter()
