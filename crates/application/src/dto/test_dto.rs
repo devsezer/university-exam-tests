@@ -79,7 +79,7 @@ pub struct TestBookResponse {
     pub name: String,
     pub lesson_id: Uuid,
     pub exam_type_id: Uuid,
-    pub subject_id: Uuid,
+    pub subject_ids: Vec<Uuid>,
     pub published_year: u16,
     pub created_at: DateTime<Utc>,
 }
@@ -90,7 +90,8 @@ pub struct CreateTestBookRequest {
     pub name: String,
     pub lesson_id: Uuid,
     pub exam_type_id: Uuid,
-    pub subject_id: Uuid,
+    #[validate(length(min = 1, message = "At least one subject is required"))]
+    pub subject_ids: Vec<Uuid>,
     #[validate(range(min = 2000, max = 2100, message = "Published year must be between 2000 and 2100"))]
     pub published_year: u16,
 }
@@ -101,7 +102,7 @@ pub struct UpdateTestBookRequest {
     pub name: Option<String>,
     pub lesson_id: Option<Uuid>,
     pub exam_type_id: Option<Uuid>,
-    pub subject_id: Option<Uuid>,
+    pub subject_ids: Option<Vec<Uuid>>,
     #[validate(range(min = 2000, max = 2100, message = "Published year must be between 2000 and 2100"))]
     pub published_year: Option<u16>,
 }

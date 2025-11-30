@@ -9,8 +9,8 @@ use crate::handlers::{
     get_exam_type, get_lesson, get_practice_test, get_result, get_subject, get_test_book,
     list_admin_exam_types, list_admin_lessons, list_admin_practice_tests, list_admin_subjects,
     list_admin_test_books, list_exam_types, list_lessons, list_my_results, list_practice_tests,
-    list_subjects, list_test_books, solve_test, update_exam_type, update_lesson,
-    update_practice_test, update_subject, update_test_book,
+    list_subjects, list_test_book_subjects, list_test_books, solve_test, update_exam_type,
+    update_lesson, update_practice_test, update_subject, update_test_book,
 };
 use crate::state::AppState;
 
@@ -21,6 +21,7 @@ pub fn test_routes() -> Router<AppState> {
         .route("/api/v1/exam-types", get(list_exam_types))
         .route("/api/v1/subjects", get(list_subjects))
         .route("/api/v1/test-books", get(list_test_books))
+        .route("/api/v1/test-books/{id}/subjects", get(list_test_book_subjects))
         .route("/api/v1/practice-tests", get(list_practice_tests))
         .route("/api/v1/tests/{id}/solve", post(solve_test))
         .route("/api/v1/my-results", get(list_my_results))

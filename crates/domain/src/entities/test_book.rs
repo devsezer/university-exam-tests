@@ -13,8 +13,6 @@ pub struct TestBook {
     pub lesson_id: Uuid,
     /// ID of the exam type this test book belongs to
     pub exam_type_id: Uuid,
-    /// ID of the subject this test book belongs to
-    pub subject_id: Uuid,
     /// Published year of the test book
     pub published_year: u16,
     /// Timestamp when the test book was created
@@ -27,7 +25,6 @@ impl TestBook {
         name: String,
         lesson_id: Uuid,
         exam_type_id: Uuid,
-        subject_id: Uuid,
         published_year: u16,
     ) -> Self {
         Self {
@@ -35,7 +32,6 @@ impl TestBook {
             name,
             lesson_id,
             exam_type_id,
-            subject_id,
             published_year,
             created_at: Utc::now(),
         }

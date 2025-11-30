@@ -61,6 +61,7 @@ use crate::errors::{ErrorDetail, ErrorResponse};
         crate::handlers::create_test_book,
         crate::handlers::get_test_book,
         crate::handlers::list_test_books,
+        crate::handlers::list_test_book_subjects,
         crate::handlers::list_admin_test_books,
         crate::handlers::update_test_book,
         crate::handlers::delete_test_book,

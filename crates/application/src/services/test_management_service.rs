@@ -6,7 +6,7 @@ use domain::entities::{ExamType, Lesson, PracticeTest, Subject, TestBook};
 use domain::errors::DomainError;
 use domain::repositories::{
     ExamTypeRepository, LessonRepository, PracticeTestRepository, SubjectRepository,
-    TestBookRepository,
+    TestBookRepository, TestBookSubjectRepository,
 };
 
 use crate::dto::{
@@ -116,6 +116,10 @@ pub trait TestManagementService: Send + Sync {
         request: CreateTestBookRequest,
     ) -> Result<TestBookResponse, TestManagementError>;
     async fn get_test_book(&self, id: Uuid) -> Result<TestBookResponse, TestManagementError>;
+    async fn list_subjects_by_test_book_id(
+        &self,
+        test_book_id: Uuid,
+    ) -> Result<Vec<SubjectResponse>, TestManagementError>;
     async fn list_test_books_by_subject(
         &self,
         subject_id: Uuid,
@@ -148,27 +152,30 @@ pub trait TestManagementService: Send + Sync {
 }
 
 /// Implementation of TestManagementService.
-pub struct TestManagementServiceImpl<L, E, S, T, P>
+pub struct TestManagementServiceImpl<L, E, S, T, TB, P>
 where
     L: LessonRepository,
     E: ExamTypeRepository,
     S: SubjectRepository,
     T: TestBookRepository,
+    TB: TestBookSubjectRepository,
     P: PracticeTestRepository,
 {
     lesson_repo: Arc<L>,
     exam_type_repo: Arc<E>,
     subject_repo: Arc<S>,
     test_book_repo: Arc<T>,
+    test_book_subject_repo: Arc<TB>,
     practice_test_repo: Arc<P>,
 }
 
-impl<L, E, S, T, P> TestManagementServiceImpl<L, E, S, T, P>
+impl<L, E, S, T, TB, P> TestManagementServiceImpl<L, E, S, T, TB, P>
 where
     L: LessonRepository,
     E: ExamTypeRepository,
     S: SubjectRepository,
     T: TestBookRepository,
+    TB: TestBookSubjectRepository,
     P: PracticeTestRepository,
 {
     pub fn new(
@@ -176,6 +183,7 @@ where
         exam_type_repo: Arc<E>,
         subject_repo: Arc<S>,
         test_book_repo: Arc<T>,
+        test_book_subject_repo: Arc<TB>,
         practice_test_repo: Arc<P>,
     ) -> Self {
         Self {
@@ -183,18 +191,20 @@ where
             exam_type_repo,
             subject_repo,
             test_book_repo,
+            test_book_subject_repo,
             practice_test_repo,
         }
     }
 }
 
 #[async_trait]
-impl<L, E, S, T, P> TestManagementService for TestManagementServiceImpl<L, E, S, T, P>
+impl<L, E, S, T, TB, P> TestManagementService for TestManagementServiceImpl<L, E, S, T, TB, P>
 where
     L: LessonRepository + 'static,
     E: ExamTypeRepository + 'static,
     S: SubjectRepository + 'static,
     T: TestBookRepository + 'static,
+    TB: TestBookSubjectRepository + 'static,
     P: PracticeTestRepository + 'static,
 {
     // Lesson operations
@@ -515,7 +525,7 @@ where
         &self,
         request: CreateTestBookRequest,
     ) -> Result<TestBookResponse, TestManagementError> {
-        // Verify lesson, exam type and subject exist
+        // Verify lesson and exam type exist
         self.lesson_repo
             .find_by_id(request.lesson_id)
             .await?
@@ -524,26 +534,40 @@ where
             .find_by_id(request.exam_type_id)
             .await?
             .ok_or(TestManagementError::ExamTypeNotFound)?;
-        self.subject_repo
-            .find_by_id(request.subject_id)
-            .await?
-            .ok_or(TestManagementError::SubjectNotFound)?;
+
+        // Verify all subjects exist
+        for subject_id in &request.subject_ids {
+            self.subject_repo
+                .find_by_id(*subject_id)
+                .await?
+                .ok_or(TestManagementError::SubjectNotFound)?;
+        }
 
         let test_book = TestBook::new(
             request.name,
             request.lesson_id,
             request.exam_type_id,
-            request.subject_id,
             request.published_year,
         );
         let created = self.test_book_repo.create(&test_book).await?;
+
+        // Add subjects to junction table
+        self.test_book_subject_repo
+            .set_subjects(created.id, &request.subject_ids)
+            .await?;
+
+        // Get subject IDs for response
+        let subject_ids = self
+            .test_book_subject_repo
+            .find_subject_ids_by_test_book_id(created.id)
+            .await?;
 
         Ok(TestBookResponse {
             id: created.id,
             name: created.name,
             lesson_id: created.lesson_id,
             exam_type_id: created.exam_type_id,
-            subject_id: created.subject_id,
+            subject_ids,
             published_year: created.published_year,
             created_at: created.created_at,
         })
@@ -556,15 +580,58 @@ where
             .await?
             .ok_or(TestManagementError::TestBookNotFound)?;
 
+        // Get subject IDs from junction table
+        let subject_ids = self
+            .test_book_subject_repo
+            .find_subject_ids_by_test_book_id(id)
+            .await?;
+
         Ok(TestBookResponse {
             id: test_book.id,
             name: test_book.name,
             lesson_id: test_book.lesson_id,
             exam_type_id: test_book.exam_type_id,
-            subject_id: test_book.subject_id,
+            subject_ids,
             published_year: test_book.published_year,
             created_at: test_book.created_at,
         })
+    }
+
+    async fn list_subjects_by_test_book_id(
+        &self,
+        test_book_id: Uuid,
+    ) -> Result<Vec<SubjectResponse>, TestManagementError> {
+        // Test book'un varlığını kontrol et
+        self.test_book_repo
+            .find_by_id(test_book_id)
+            .await?
+            .ok_or(TestManagementError::TestBookNotFound)?;
+
+        // Junction table'dan subject ID'leri al
+        let subject_ids = self
+            .test_book_subject_repo
+            .find_subject_ids_by_test_book_id(test_book_id)
+            .await?;
+
+        // Her subject ID için subject bilgilerini getir
+        let mut subjects = Vec::new();
+        for subject_id in subject_ids {
+            let subject = self
+                .subject_repo
+                .find_by_id(subject_id)
+                .await?
+                .ok_or(TestManagementError::SubjectNotFound)?;
+
+            subjects.push(SubjectResponse {
+                id: subject.id,
+                name: subject.name,
+                lesson_id: subject.lesson_id,
+                exam_type_id: subject.exam_type_id,
+                created_at: subject.created_at,
+            });
+        }
+
+        Ok(subjects)
     }
 
     async fn list_test_books_by_subject(
@@ -573,35 +640,49 @@ where
     ) -> Result<Vec<TestBookResponse>, TestManagementError> {
         let test_books = self.test_book_repo.find_by_subject_id(subject_id).await?;
 
-        Ok(test_books
-            .into_iter()
-            .map(|tb| TestBookResponse {
+        // Get subject IDs for each test book
+        let mut responses = Vec::new();
+        for tb in test_books {
+            let subject_ids = self
+                .test_book_subject_repo
+                .find_subject_ids_by_test_book_id(tb.id)
+                .await?;
+            responses.push(TestBookResponse {
                 id: tb.id,
                 name: tb.name,
                 lesson_id: tb.lesson_id,
                 exam_type_id: tb.exam_type_id,
-                subject_id: tb.subject_id,
+                subject_ids,
                 published_year: tb.published_year,
                 created_at: tb.created_at,
-            })
-            .collect())
+            });
+        }
+
+        Ok(responses)
     }
 
     async fn list_all_test_books(&self) -> Result<Vec<TestBookResponse>, TestManagementError> {
         let test_books = self.test_book_repo.list_all().await?;
 
-        Ok(test_books
-            .into_iter()
-            .map(|tb| TestBookResponse {
+        // Get subject IDs for each test book
+        let mut responses = Vec::new();
+        for tb in test_books {
+            let subject_ids = self
+                .test_book_subject_repo
+                .find_subject_ids_by_test_book_id(tb.id)
+                .await?;
+            responses.push(TestBookResponse {
                 id: tb.id,
                 name: tb.name,
                 lesson_id: tb.lesson_id,
                 exam_type_id: tb.exam_type_id,
-                subject_id: tb.subject_id,
+                subject_ids,
                 published_year: tb.published_year,
                 created_at: tb.created_at,
-            })
-            .collect())
+            });
+        }
+
+        Ok(responses)
     }
 
     async fn update_test_book(
@@ -632,25 +713,39 @@ where
                 .ok_or(TestManagementError::ExamTypeNotFound)?;
             test_book.exam_type_id = exam_type_id;
         }
-        if let Some(subject_id) = request.subject_id {
-            self.subject_repo
-                .find_by_id(subject_id)
-                .await?
-                .ok_or(TestManagementError::SubjectNotFound)?;
-            test_book.subject_id = subject_id;
-        }
         if let Some(published_year) = request.published_year {
             test_book.published_year = published_year;
         }
 
         let updated = self.test_book_repo.update(&test_book).await?;
 
+        // Update subjects if provided
+        if let Some(subject_ids) = request.subject_ids {
+            // Verify all subjects exist
+            for subject_id in &subject_ids {
+                self.subject_repo
+                    .find_by_id(*subject_id)
+                    .await?
+                    .ok_or(TestManagementError::SubjectNotFound)?;
+            }
+            // Update junction table
+            self.test_book_subject_repo
+                .set_subjects(id, &subject_ids)
+                .await?;
+        }
+
+        // Get subject IDs for response
+        let subject_ids = self
+            .test_book_subject_repo
+            .find_subject_ids_by_test_book_id(id)
+            .await?;
+
         Ok(TestBookResponse {
             id: updated.id,
             name: updated.name,
             lesson_id: updated.lesson_id,
             exam_type_id: updated.exam_type_id,
-            subject_id: updated.subject_id,
+            subject_ids,
             published_year: updated.published_year,
             created_at: updated.created_at,
         })

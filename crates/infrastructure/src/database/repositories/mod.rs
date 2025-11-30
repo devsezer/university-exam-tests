@@ -5,6 +5,7 @@ mod refresh_token_repository_impl;
 mod role_repository_impl;
 mod subject_repository_impl;
 mod test_book_repository_impl;
+mod test_book_subject_repository_impl;
 mod test_result_repository_impl;
 mod user_repository_impl;
 
@@ -15,6 +16,7 @@ pub use refresh_token_repository_impl::PgRefreshTokenRepository;
 pub use role_repository_impl::PgRoleRepository;
 pub use subject_repository_impl::PgSubjectRepository;
 pub use test_book_repository_impl::PgTestBookRepository;
+pub use test_book_subject_repository_impl::PgTestBookSubjectRepository;
 pub use test_result_repository_impl::PgTestResultRepository;
 pub use user_repository_impl::PgUserRepository;
 

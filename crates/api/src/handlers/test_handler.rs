@@ -762,6 +762,32 @@ pub async fn get_test_book(
     Ok(Json(ApiResponse::success(result.into())))
 }
 
+/// List subjects for a test book
+#[utoipa::path(
+    get,
+    path = "/api/v1/test-books/{id}/subjects",
+    params(("id" = Uuid, Path, description = "Test book ID")),
+    responses(
+        (status = 200, description = "Subjects retrieved", body = ApiResponse<Vec<SubjectResponse>>),
+        (status = 404, description = "Test book not found"),
+    ),
+    tag = "tests"
+)]
+pub async fn list_test_book_subjects(
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+) -> Result<Json<ApiResponse<Vec<SubjectResponse>>>, AppError> {
+    let results = state
+        .test_management_service
+        .list_subjects_by_test_book_id(id)
+        .await
+        .map_err(|e| handle_service_error("service_call", e))?;
+
+    Ok(Json(ApiResponse::success(
+        results.into_iter().map(|r| r.into()).collect(),
+    )))
+}
+
 /// List test books by subject
 #[utoipa::path(
     get,

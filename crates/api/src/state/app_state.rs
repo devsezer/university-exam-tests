@@ -8,8 +8,8 @@ use application::services::{
 use infrastructure::config::Settings;
 use infrastructure::database::repositories::{
     PgExamTypeRepository, PgLessonRepository, PgPracticeTestRepository, PgRefreshTokenRepository,
-    PgRoleRepository, PgSubjectRepository, PgTestBookRepository, PgTestResultRepository,
-    PgUserRepository,
+    PgRoleRepository, PgSubjectRepository, PgTestBookRepository, PgTestBookSubjectRepository,
+    PgTestResultRepository, PgUserRepository,
 };
 use infrastructure::database::DatabasePool;
 use infrastructure::security::{JwtConfig, JwtService, PasswordService};
@@ -76,6 +76,7 @@ impl AppState {
         let exam_type_repo = Arc::new(PgExamTypeRepository::new(db_pool.clone()));
         let subject_repo = Arc::new(PgSubjectRepository::new(db_pool.clone()));
         let test_book_repo = Arc::new(PgTestBookRepository::new(db_pool.clone()));
+        let test_book_subject_repo = Arc::new(PgTestBookSubjectRepository::new(db_pool.clone()));
         let practice_test_repo = Arc::new(PgPracticeTestRepository::new(db_pool.clone()));
         let test_result_repo = Arc::new(PgTestResultRepository::new(db_pool.clone()));
 
@@ -99,6 +100,7 @@ impl AppState {
                 exam_type_repo.clone(),
                 subject_repo.clone(),
                 test_book_repo.clone(),
+                test_book_subject_repo.clone(),
                 practice_test_repo.clone(),
             ),
         );

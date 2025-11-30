@@ -73,8 +73,8 @@ pub struct CreateTestBookRequest {
     pub lesson_id: Uuid,
     #[schema(example = "550e8400-e29b-41d4-a716-446655440001")]
     pub exam_type_id: Uuid,
-    #[schema(example = "550e8400-e29b-41d4-a716-446655440002")]
-    pub subject_id: Uuid,
+    #[validate(length(min = 1, message = "At least one subject is required"))]
+    pub subject_ids: Vec<Uuid>,
     #[schema(example = 2024)]
     #[validate(range(min = 2000, max = 2100))]
     pub published_year: u16,
@@ -90,8 +90,7 @@ pub struct UpdateTestBookRequest {
     pub lesson_id: Option<Uuid>,
     #[schema(example = "550e8400-e29b-41d4-a716-446655440001")]
     pub exam_type_id: Option<Uuid>,
-    #[schema(example = "550e8400-e29b-41d4-a716-446655440002")]
-    pub subject_id: Option<Uuid>,
+    pub subject_ids: Option<Vec<Uuid>>,
     #[schema(example = 2024)]
     #[validate(range(min = 2000, max = 2100))]
     pub published_year: Option<u16>,
@@ -200,7 +199,7 @@ impl CreateTestBookRequest {
             name: self.name,
             lesson_id: self.lesson_id,
             exam_type_id: self.exam_type_id,
-            subject_id: self.subject_id,
+            subject_ids: self.subject_ids,
             published_year: self.published_year,
         }
     }
@@ -212,7 +211,7 @@ impl UpdateTestBookRequest {
             name: self.name,
             lesson_id: self.lesson_id,
             exam_type_id: self.exam_type_id,
-            subject_id: self.subject_id,
+            subject_ids: self.subject_ids,
             published_year: self.published_year,
         }
     }

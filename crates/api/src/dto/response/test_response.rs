@@ -50,8 +50,7 @@ pub struct TestBookResponse {
     pub lesson_id: Uuid,
     #[schema(example = "550e8400-e29b-41d4-a716-446655440002")]
     pub exam_type_id: Uuid,
-    #[schema(example = "550e8400-e29b-41d4-a716-446655440003")]
-    pub subject_id: Uuid,
+    pub subject_ids: Vec<Uuid>,
     #[schema(example = 2024)]
     pub published_year: u16,
     pub created_at: DateTime<Utc>,
@@ -148,7 +147,7 @@ impl From<application::dto::TestBookResponse> for TestBookResponse {
             name: dto.name,
             lesson_id: dto.lesson_id,
             exam_type_id: dto.exam_type_id,
-            subject_id: dto.subject_id,
+            subject_ids: dto.subject_ids,
             published_year: dto.published_year,
             created_at: dto.created_at,
         }
