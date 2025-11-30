@@ -1,0 +1,68 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - APP_NAME=rust-api-boilerplate
+      - APP_ENV=development
+      - APP_HOST=0.0.0.0
+      - APP_PORT=8080
+      - DATABASE_URL=postgres://postgres:postgres@db:5432/app_db
+      - DATABASE_MAX_CONNECTIONS=10
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=your-super-secret-key-change-in-production-min-32-chars
+      - JWT_ACCESS_TOKEN_EXPIRATION_MINUTES=15
+      - JWT_REFRESH_TOKEN_EXPIRATION_DAYS=7
+      - RUST_LOG=info,tower_http=debug,sqlx=warn
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    stop_grace_period: 30s
+    restart: unless-stopped
+
+  db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=app_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    command: redis-server --appendonly yes
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+

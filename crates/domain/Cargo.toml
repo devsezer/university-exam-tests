@@ -1,0 +1,21 @@
+[package]
+name = "domain"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+# Serialization (for DTOs, no framework dependency)
+serde = { workspace = true }
+
+# Error handling
+thiserror = { workspace = true }
+
+# Utilities
+uuid = { workspace = true }
+chrono = { workspace = true }
+
+# Async trait for repository definitions
+async-trait = { workspace = true }
+

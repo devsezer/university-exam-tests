@@ -1,0 +1,36 @@
+[package]
+name = "application"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+# Internal crates
+domain = { workspace = true }
+
+# Serialization
+serde = { workspace = true }
+
+# Validation
+validator = { workspace = true }
+
+# Error handling
+thiserror = { workspace = true }
+
+# Utilities
+uuid = { workspace = true }
+chrono = { workspace = true }
+base64 = { workspace = true }
+sha2 = { workspace = true }
+once_cell = { workspace = true }
+
+# Regex for validation
+regex = "1.11"
+
+# Random generation
+rand = { workspace = true }
+
+# Async trait
+async-trait = { workspace = true }
+
