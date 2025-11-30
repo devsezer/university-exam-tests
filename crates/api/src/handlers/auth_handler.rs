@@ -5,6 +5,7 @@ use axum::{
 };
 use std::net::SocketAddr;
 use validator::Validate;
+use tracing::error;
 
 use crate::dto::request::{LoginRequest, LogoutRequest, RefreshTokenRequest, RegisterRequest};
 use crate::dto::response::{ApiResponse, AuthResponse, MessageResponse, RegisterResponse, TokenResponse, UserResponse};
@@ -37,7 +38,11 @@ pub async fn register(
     let result = state
         .auth_service
         .register(request.into_app_request())
-        .await?;
+        .await
+        .map_err(|e| {
+            error!("Registration failed: {:?}", e);
+            AppError::from(e)
+        })?;
 
     Ok((
         StatusCode::CREATED,
@@ -121,7 +126,11 @@ pub async fn refresh_token(
     let result = state
         .auth_service
         .refresh_token(request.into_app_request(), user_agent, ip_address)
-        .await?;
+        .await
+        .map_err(|e| {
+            error!("Token refresh failed: {:?}", e);
+            AppError::from(e)
+        })?;
 
     Ok(Json(ApiResponse::success_with_message(
         TokenResponse::from(result),
@@ -152,7 +161,11 @@ pub async fn logout(
     state
         .auth_service
         .logout(current_user.id, request.into_app_request())
-        .await?;
+        .await
+        .map_err(|e| {
+            error!(user_id = ?current_user.id, "Logout failed: {:?}", e);
+            AppError::from(e)
+        })?;
 
     Ok(Json(ApiResponse::success(MessageResponse::new(
         "Logged out successfully",
@@ -177,7 +190,14 @@ pub async fn get_current_user(
     current_user: CurrentUser,
 ) -> Result<Json<ApiResponse<UserResponse>>, AppError> {
     // Call auth service
-    let result = state.auth_service.get_current_user(current_user.id).await?;
+    let result = state
+        .auth_service
+        .get_current_user(current_user.id)
+        .await
+        .map_err(|e| {
+            error!(user_id = ?current_user.id, "Failed to get current user: {:?}", e);
+            AppError::from(e)
+        })?;
 
     Ok(Json(ApiResponse::success(UserResponse::from(result))))
 }

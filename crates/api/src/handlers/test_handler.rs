@@ -5,6 +5,7 @@ use axum::{
 };
 use uuid::Uuid;
 use validator::Validate;
+use tracing::error;
 
 use crate::dto::request::{
     CreateExamTypeRequest, CreatePracticeTestRequest, CreateSubjectRequest, CreateTestBookRequest,
@@ -16,8 +17,14 @@ use crate::dto::response::{
     SolveTestResponse, SubjectResponse, TestBookResponse, TestResultResponse,
 };
 use crate::errors::AppError;
-use crate::extractors::CurrentUser;
+use crate::extractors::{CurrentUser, RequireAdmin};
 use crate::state::AppState;
+
+/// Helper function to log service errors and convert to AppError
+fn handle_service_error<E: std::fmt::Debug + Into<AppError>>(operation: &str, e: E) -> AppError {
+    error!(operation = operation, "Service error: {:?}", e);
+    e.into()
+}
 
 // ExamType Handlers
 
@@ -29,11 +36,17 @@ use crate::state::AppState;
     responses(
         (status = 201, description = "Exam type created successfully", body = ApiResponse<ExamTypeResponse>),
         (status = 400, description = "Validation error"),
+        (status = 401, description = "Unauthorized"),
+        (status = 403, description = "Forbidden - Admin access required"),
+    ),
+    security(
+        ("bearer_auth" = [])
     ),
     tag = "admin"
 )]
 pub async fn create_exam_type(
     State(state): State<AppState>,
+    _admin: RequireAdmin,
     Json(request): Json<CreateExamTypeRequest>,
 ) -> Result<(StatusCode, Json<ApiResponse<ExamTypeResponse>>), AppError> {
     request.validate().map_err(|e| AppError::ValidationError(e.to_string()))?;
@@ -42,7 +55,7 @@ pub async fn create_exam_type(
         .test_management_service
         .create_exam_type(request.into_app_request())
         .await
-        .map_err(|e| AppError::from(e))?;
+        .map_err(|e| handle_service_error("create_exam_type", e))?;
 
     Ok((
         StatusCode::CREATED,
@@ -60,19 +73,28 @@ pub async fn create_exam_type(
     params(("id" = Uuid, Path, description = "Exam type ID")),
     responses(
         (status = 200, description = "Exam type retrieved", body = ApiResponse<ExamTypeResponse>),
+        (status = 401, description = "Unauthorized"),
+        (status = 403, description = "Forbidden - Admin access required"),
         (status = 404, description = "Exam type not found"),
+    ),
+    security(
+        ("bearer_auth" = [])
     ),
     tag = "admin"
 )]
 pub async fn get_exam_type(
     State(state): State<AppState>,
+    _admin: RequireAdmin,
     Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<ExamTypeResponse>>, AppError> {
     let result = state
         .test_management_service
         .get_exam_type(id)
         .await
-        .map_err(|e| AppError::from(e))?;
+        .map_err(|e| {
+            error!(exam_type_id = ?id, "Failed to get exam type: {:?}", e);
+            AppError::from(e)
+        })?;
 
     Ok(Json(ApiResponse::success(result.into())))
 }
@@ -93,7 +115,7 @@ pub async fn list_exam_types(
         .test_management_service
         .list_exam_types()
         .await
-        .map_err(|e| AppError::from(e))?;
+        .map_err(|e| handle_service_error("list_exam_types", e))?;
 
     Ok(Json(ApiResponse::success(
         results.into_iter().map(|r| r.into()).collect(),
@@ -108,12 +130,18 @@ pub async fn list_exam_types(
     request_body = UpdateExamTypeRequest,
     responses(
         (status = 200, description = "Exam type updated", body = ApiResponse<ExamTypeResponse>),
+        (status = 401, description = "Unauthorized"),
+        (status = 403, description = "Forbidden - Admin access required"),
         (status = 404, description = "Exam type not found"),
+    ),
+    security(
+        ("bearer_auth" = [])
     ),
     tag = "admin"
 )]
 pub async fn update_exam_type(
     State(state): State<AppState>,
+    _admin: RequireAdmin,
     Path(id): Path<Uuid>,
     Json(request): Json<UpdateExamTypeRequest>,
 ) -> Result<Json<ApiResponse<ExamTypeResponse>>, AppError> {
@@ -123,7 +151,10 @@ pub async fn update_exam_type(
         .test_management_service
         .update_exam_type(id, request.into_app_request())
         .await
-        .map_err(|e| AppError::from(e))?;
+        .map_err(|e| {
+            error!(exam_type_id = ?id, "Failed to update exam type: {:?}", e);
+            AppError::from(e)
+        })?;
 
     Ok(Json(ApiResponse::success_with_message(
         result.into(),
@@ -138,19 +169,28 @@ pub async fn update_exam_type(
     params(("id" = Uuid, Path, description = "Exam type ID")),
     responses(
         (status = 200, description = "Exam type deleted", body = ApiResponse<MessageResponse>),
+        (status = 401, description = "Unauthorized"),
+        (status = 403, description = "Forbidden - Admin access required"),
         (status = 404, description = "Exam type not found"),
+    ),
+    security(
+        ("bearer_auth" = [])
     ),
     tag = "admin"
 )]
 pub async fn delete_exam_type(
     State(state): State<AppState>,
+    _admin: RequireAdmin,
     Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<MessageResponse>>, AppError> {
     state
         .test_management_service
         .delete_exam_type(id)
         .await
-        .map_err(|e| AppError::from(e))?;
+        .map_err(|e| {
+            error!(exam_type_id = ?id, "Failed to delete exam type: {:?}", e);
+            AppError::from(e)
+        })?;
 
     Ok(Json(ApiResponse::success_with_message(
         MessageResponse {
@@ -170,11 +210,17 @@ pub async fn delete_exam_type(
     responses(
         (status = 201, description = "Subject created successfully", body = ApiResponse<SubjectResponse>),
         (status = 400, description = "Validation error"),
+        (status = 401, description = "Unauthorized"),
+        (status = 403, description = "Forbidden - Admin access required"),
+    ),
+    security(
+        ("bearer_auth" = [])
     ),
     tag = "admin"
 )]
 pub async fn create_subject(
     State(state): State<AppState>,
+    _admin: RequireAdmin,
     Json(request): Json<CreateSubjectRequest>,
 ) -> Result<(StatusCode, Json<ApiResponse<SubjectResponse>>), AppError> {
     request.validate().map_err(|e| AppError::ValidationError(e.to_string()))?;
@@ -183,7 +229,7 @@ pub async fn create_subject(
         .test_management_service
         .create_subject(request.into_app_request())
         .await
-        .map_err(|e| AppError::from(e))?;
+        .map_err(|e| handle_service_error("service_call", e))?;
 
     Ok((
         StatusCode::CREATED,
@@ -201,19 +247,28 @@ pub async fn create_subject(
     params(("id" = Uuid, Path, description = "Subject ID")),
     responses(
         (status = 200, description = "Subject retrieved", body = ApiResponse<SubjectResponse>),
+        (status = 401, description = "Unauthorized"),
+        (status = 403, description = "Forbidden - Admin access required"),
         (status = 404, description = "Subject not found"),
+    ),
+    security(
+        ("bearer_auth" = [])
     ),
     tag = "admin"
 )]
 pub async fn get_subject(
     State(state): State<AppState>,
+    _admin: RequireAdmin,
     Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<SubjectResponse>>, AppError> {
     let result = state
         .test_management_service
         .get_subject(id)
         .await
-        .map_err(|e| AppError::from(e))?;
+        .map_err(|e| {
+            error!(subject_id = ?id, "Failed to get subject: {:?}", e);
+            AppError::from(e)
+        })?;
 
     Ok(Json(ApiResponse::success(result.into())))
 }
@@ -241,13 +296,13 @@ pub async fn list_subjects(
             .test_management_service
             .list_subjects_by_exam_type(exam_type_id)
             .await
-            .map_err(|e| AppError::from(e))?
+            .map_err(|e| handle_service_error("service_call", e))?
     } else {
         state
             .test_management_service
             .list_all_subjects()
             .await
-            .map_err(|e| AppError::from(e))?
+            .map_err(|e| handle_service_error("service_call", e))?
     };
 
     Ok(Json(ApiResponse::success(
@@ -263,12 +318,18 @@ pub async fn list_subjects(
     request_body = UpdateSubjectRequest,
     responses(
         (status = 200, description = "Subject updated", body = ApiResponse<SubjectResponse>),
+        (status = 401, description = "Unauthorized"),
+        (status = 403, description = "Forbidden - Admin access required"),
         (status = 404, description = "Subject not found"),
+    ),
+    security(
+        ("bearer_auth" = [])
     ),
     tag = "admin"
 )]
 pub async fn update_subject(
     State(state): State<AppState>,
+    _admin: RequireAdmin,
     Path(id): Path<Uuid>,
     Json(request): Json<UpdateSubjectRequest>,
 ) -> Result<Json<ApiResponse<SubjectResponse>>, AppError> {
@@ -278,7 +339,7 @@ pub async fn update_subject(
         .test_management_service
         .update_subject(id, request.into_app_request())
         .await
-        .map_err(|e| AppError::from(e))?;
+        .map_err(|e| handle_service_error("service_call", e))?;
 
     Ok(Json(ApiResponse::success_with_message(
         result.into(),
@@ -293,19 +354,25 @@ pub async fn update_subject(
     params(("id" = Uuid, Path, description = "Subject ID")),
     responses(
         (status = 200, description = "Subject deleted", body = ApiResponse<MessageResponse>),
+        (status = 401, description = "Unauthorized"),
+        (status = 403, description = "Forbidden - Admin access required"),
         (status = 404, description = "Subject not found"),
+    ),
+    security(
+        ("bearer_auth" = [])
     ),
     tag = "admin"
 )]
 pub async fn delete_subject(
     State(state): State<AppState>,
+    _admin: RequireAdmin,
     Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<MessageResponse>>, AppError> {
     state
         .test_management_service
         .delete_subject(id)
         .await
-        .map_err(|e| AppError::from(e))?;
+        .map_err(|e| handle_service_error("service_call", e))?;
 
     Ok(Json(ApiResponse::success_with_message(
         MessageResponse {
@@ -325,11 +392,17 @@ pub async fn delete_subject(
     responses(
         (status = 201, description = "Test book created successfully", body = ApiResponse<TestBookResponse>),
         (status = 400, description = "Validation error"),
+        (status = 401, description = "Unauthorized"),
+        (status = 403, description = "Forbidden - Admin access required"),
+    ),
+    security(
+        ("bearer_auth" = [])
     ),
     tag = "admin"
 )]
 pub async fn create_test_book(
     State(state): State<AppState>,
+    _admin: RequireAdmin,
     Json(request): Json<CreateTestBookRequest>,
 ) -> Result<(StatusCode, Json<ApiResponse<TestBookResponse>>), AppError> {
     request.validate().map_err(|e| AppError::ValidationError(e.to_string()))?;
@@ -338,7 +411,7 @@ pub async fn create_test_book(
         .test_management_service
         .create_test_book(request.into_app_request())
         .await
-        .map_err(|e| AppError::from(e))?;
+        .map_err(|e| handle_service_error("service_call", e))?;
 
     Ok((
         StatusCode::CREATED,
@@ -356,19 +429,25 @@ pub async fn create_test_book(
     params(("id" = Uuid, Path, description = "Test book ID")),
     responses(
         (status = 200, description = "Test book retrieved", body = ApiResponse<TestBookResponse>),
+        (status = 401, description = "Unauthorized"),
+        (status = 403, description = "Forbidden - Admin access required"),
         (status = 404, description = "Test book not found"),
+    ),
+    security(
+        ("bearer_auth" = [])
     ),
     tag = "admin"
 )]
 pub async fn get_test_book(
     State(state): State<AppState>,
+    _admin: RequireAdmin,
     Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<TestBookResponse>>, AppError> {
     let result = state
         .test_management_service
         .get_test_book(id)
         .await
-        .map_err(|e| AppError::from(e))?;
+        .map_err(|e| handle_service_error("service_call", e))?;
 
     Ok(Json(ApiResponse::success(result.into())))
 }
@@ -396,13 +475,13 @@ pub async fn list_test_books(
             .test_management_service
             .list_test_books_by_subject(subject_id)
             .await
-            .map_err(|e| AppError::from(e))?
+            .map_err(|e| handle_service_error("service_call", e))?
     } else {
         state
             .test_management_service
             .list_all_test_books()
             .await
-            .map_err(|e| AppError::from(e))?
+            .map_err(|e| handle_service_error("service_call", e))?
     };
 
     Ok(Json(ApiResponse::success(
@@ -418,12 +497,18 @@ pub async fn list_test_books(
     request_body = UpdateTestBookRequest,
     responses(
         (status = 200, description = "Test book updated", body = ApiResponse<TestBookResponse>),
+        (status = 401, description = "Unauthorized"),
+        (status = 403, description = "Forbidden - Admin access required"),
         (status = 404, description = "Test book not found"),
+    ),
+    security(
+        ("bearer_auth" = [])
     ),
     tag = "admin"
 )]
 pub async fn update_test_book(
     State(state): State<AppState>,
+    _admin: RequireAdmin,
     Path(id): Path<Uuid>,
     Json(request): Json<UpdateTestBookRequest>,
 ) -> Result<Json<ApiResponse<TestBookResponse>>, AppError> {
@@ -433,7 +518,7 @@ pub async fn update_test_book(
         .test_management_service
         .update_test_book(id, request.into_app_request())
         .await
-        .map_err(|e| AppError::from(e))?;
+        .map_err(|e| handle_service_error("service_call", e))?;
 
     Ok(Json(ApiResponse::success_with_message(
         result.into(),
@@ -448,19 +533,25 @@ pub async fn update_test_book(
     params(("id" = Uuid, Path, description = "Test book ID")),
     responses(
         (status = 200, description = "Test book deleted", body = ApiResponse<MessageResponse>),
+        (status = 401, description = "Unauthorized"),
+        (status = 403, description = "Forbidden - Admin access required"),
         (status = 404, description = "Test book not found"),
+    ),
+    security(
+        ("bearer_auth" = [])
     ),
     tag = "admin"
 )]
 pub async fn delete_test_book(
     State(state): State<AppState>,
+    _admin: RequireAdmin,
     Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<MessageResponse>>, AppError> {
     state
         .test_management_service
         .delete_test_book(id)
         .await
-        .map_err(|e| AppError::from(e))?;
+        .map_err(|e| handle_service_error("service_call", e))?;
 
     Ok(Json(ApiResponse::success_with_message(
         MessageResponse {
@@ -480,11 +571,17 @@ pub async fn delete_test_book(
     responses(
         (status = 201, description = "Practice test created successfully", body = ApiResponse<PracticeTestResponse>),
         (status = 400, description = "Validation error"),
+        (status = 401, description = "Unauthorized"),
+        (status = 403, description = "Forbidden - Admin access required"),
+    ),
+    security(
+        ("bearer_auth" = [])
     ),
     tag = "admin"
 )]
 pub async fn create_practice_test(
     State(state): State<AppState>,
+    _admin: RequireAdmin,
     Json(request): Json<CreatePracticeTestRequest>,
 ) -> Result<(StatusCode, Json<ApiResponse<PracticeTestResponse>>), AppError> {
     request.validate().map_err(|e| AppError::ValidationError(e.to_string()))?;
@@ -493,7 +590,7 @@ pub async fn create_practice_test(
         .test_management_service
         .create_practice_test(request.into_app_request())
         .await
-        .map_err(|e| AppError::from(e))?;
+        .map_err(|e| handle_service_error("service_call", e))?;
 
     Ok((
         StatusCode::CREATED,
@@ -511,19 +608,25 @@ pub async fn create_practice_test(
     params(("id" = Uuid, Path, description = "Practice test ID")),
     responses(
         (status = 200, description = "Practice test retrieved", body = ApiResponse<PracticeTestResponse>),
+        (status = 401, description = "Unauthorized"),
+        (status = 403, description = "Forbidden - Admin access required"),
         (status = 404, description = "Practice test not found"),
+    ),
+    security(
+        ("bearer_auth" = [])
     ),
     tag = "admin"
 )]
 pub async fn get_practice_test(
     State(state): State<AppState>,
+    _admin: RequireAdmin,
     Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<PracticeTestResponse>>, AppError> {
     let result = state
         .test_management_service
         .get_practice_test(id)
         .await
-        .map_err(|e| AppError::from(e))?;
+        .map_err(|e| handle_service_error("service_call", e))?;
 
     Ok(Json(ApiResponse::success(result.into())))
 }
@@ -551,13 +654,13 @@ pub async fn list_practice_tests(
             .test_management_service
             .list_practice_tests_by_test_book(test_book_id)
             .await
-            .map_err(|e| AppError::from(e))?
+            .map_err(|e| handle_service_error("service_call", e))?
     } else {
         state
             .test_management_service
             .list_all_practice_tests()
             .await
-            .map_err(|e| AppError::from(e))?
+            .map_err(|e| handle_service_error("service_call", e))?
     };
 
     Ok(Json(ApiResponse::success(
@@ -573,12 +676,18 @@ pub async fn list_practice_tests(
     request_body = UpdatePracticeTestRequest,
     responses(
         (status = 200, description = "Practice test updated", body = ApiResponse<PracticeTestResponse>),
+        (status = 401, description = "Unauthorized"),
+        (status = 403, description = "Forbidden - Admin access required"),
         (status = 404, description = "Practice test not found"),
+    ),
+    security(
+        ("bearer_auth" = [])
     ),
     tag = "admin"
 )]
 pub async fn update_practice_test(
     State(state): State<AppState>,
+    _admin: RequireAdmin,
     Path(id): Path<Uuid>,
     Json(request): Json<UpdatePracticeTestRequest>,
 ) -> Result<Json<ApiResponse<PracticeTestResponse>>, AppError> {
@@ -588,7 +697,7 @@ pub async fn update_practice_test(
         .test_management_service
         .update_practice_test(id, request.into_app_request())
         .await
-        .map_err(|e| AppError::from(e))?;
+        .map_err(|e| handle_service_error("service_call", e))?;
 
     Ok(Json(ApiResponse::success_with_message(
         result.into(),
@@ -603,19 +712,25 @@ pub async fn update_practice_test(
     params(("id" = Uuid, Path, description = "Practice test ID")),
     responses(
         (status = 200, description = "Practice test deleted", body = ApiResponse<MessageResponse>),
+        (status = 401, description = "Unauthorized"),
+        (status = 403, description = "Forbidden - Admin access required"),
         (status = 404, description = "Practice test not found"),
+    ),
+    security(
+        ("bearer_auth" = [])
     ),
     tag = "admin"
 )]
 pub async fn delete_practice_test(
     State(state): State<AppState>,
+    _admin: RequireAdmin,
     Path(id): Path<Uuid>,
 ) -> Result<Json<ApiResponse<MessageResponse>>, AppError> {
     state
         .test_management_service
         .delete_practice_test(id)
         .await
-        .map_err(|e| AppError::from(e))?;
+        .map_err(|e| handle_service_error("service_call", e))?;
 
     Ok(Json(ApiResponse::success_with_message(
         MessageResponse {
@@ -653,7 +768,7 @@ pub async fn solve_test(
         .test_solving_service
         .solve_test(user.id, practice_test_id, request.into_app_request())
         .await
-        .map_err(|e| AppError::from(e))?;
+        .map_err(|e| handle_service_error("service_call", e))?;
 
     Ok(Json(ApiResponse::success_with_message(
         result.into(),
@@ -684,7 +799,7 @@ pub async fn get_result(
         .result_service
         .get_result(id)
         .await
-        .map_err(|e| AppError::from(e))?;
+        .map_err(|e| handle_service_error("service_call", e))?;
 
     // Verify the result belongs to the current user
     if result.user_id != user.id {
@@ -727,7 +842,7 @@ pub async fn list_my_results(
         .result_service
         .list_user_results(user.id, page, per_page)
         .await
-        .map_err(|e| AppError::from(e))?;
+        .map_err(|e| handle_service_error("service_call", e))?;
 
     let total_pages = (total as f64 / per_page as f64).ceil() as u32;
 

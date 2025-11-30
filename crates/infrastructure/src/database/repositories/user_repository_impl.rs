@@ -311,5 +311,62 @@ impl UserRepository for PgUserRepository {
 
         Ok((users.into_iter().map(Into::into).collect(), total as u64))
     }
+
+    async fn assign_role(
+        &self,
+        user_id: Uuid,
+        role_id: Uuid,
+        assigned_by: Option<Uuid>,
+    ) -> Result<(), DomainError> {
+        sqlx::query(
+            r#"
+            INSERT INTO user_roles (user_id, role_id, assigned_at, assigned_by)
+            VALUES ($1, $2, NOW(), $3)
+            ON CONFLICT (user_id, role_id) DO NOTHING
+            "#,
+        )
+        .bind(user_id)
+        .bind(role_id)
+        .bind(assigned_by)
+        .execute(&self.pool)
+        .await
+        .map_err(|e| DomainError::DatabaseError(e.to_string()))?;
+
+        Ok(())
+    }
+
+    async fn remove_role(&self, user_id: Uuid, role_id: Uuid) -> Result<(), DomainError> {
+        sqlx::query(
+            r#"
+            DELETE FROM user_roles
+            WHERE user_id = $1 AND role_id = $2
+            "#,
+        )
+        .bind(user_id)
+        .bind(role_id)
+        .execute(&self.pool)
+        .await
+        .map_err(|e| DomainError::DatabaseError(e.to_string()))?;
+
+        Ok(())
+    }
+
+    async fn get_user_roles(&self, user_id: Uuid) -> Result<Vec<String>, DomainError> {
+        let roles = sqlx::query_scalar::<_, String>(
+            r#"
+            SELECT r.name
+            FROM roles r
+            INNER JOIN user_roles ur ON r.id = ur.role_id
+            WHERE ur.user_id = $1
+            ORDER BY r.name ASC
+            "#,
+        )
+        .bind(user_id)
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| DomainError::DatabaseError(e.to_string()))?;
+
+        Ok(roles)
+    }
 }
 

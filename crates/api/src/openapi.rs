@@ -2,15 +2,16 @@ use utoipa::openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme};
 use utoipa::{Modify, OpenApi};
 
 use crate::dto::request::{
-    CreateExamTypeRequest, CreatePracticeTestRequest, CreateSubjectRequest, CreateTestBookRequest,
-    LoginRequest, LogoutRequest, RefreshTokenRequest, RegisterRequest, SolveTestRequest,
-    UpdateExamTypeRequest, UpdatePracticeTestRequest, UpdateSubjectRequest, UpdateTestBookRequest,
+    AssignRoleRequest, CreateExamTypeRequest, CreatePracticeTestRequest, CreateRoleRequest,
+    CreateSubjectRequest, CreateTestBookRequest, LoginRequest, LogoutRequest, RefreshTokenRequest,
+    RegisterRequest, SolveTestRequest, UpdateExamTypeRequest, UpdatePracticeTestRequest,
+    UpdateRoleRequest, UpdateSubjectRequest, UpdateTestBookRequest,
 };
 use crate::dto::response::{
     AuthResponse, ExamTypeResponse, HealthCheckResult, HealthChecks, LivenessResponse,
     MessageResponse, PaginationInfo, PracticeTestResponse, ReadinessResponse, RegisterResponse,
-    SolveTestResponse, SubjectResponse, TestBookResponse, TestResultResponse, TokenResponse,
-    UserResponse,
+    RoleResponse, SolveTestResponse, SubjectResponse, TestBookResponse, TestResultResponse,
+    TokenResponse, UserResponse,
 };
 use crate::errors::{ErrorDetail, ErrorResponse};
 
@@ -61,6 +62,13 @@ use crate::errors::{ErrorDetail, ErrorResponse};
         crate::handlers::solve_test,
         crate::handlers::get_result,
         crate::handlers::list_my_results,
+        crate::handlers::list_roles,
+        crate::handlers::create_role,
+        crate::handlers::get_role,
+        crate::handlers::update_role,
+        crate::handlers::delete_role,
+        crate::handlers::assign_role_to_user,
+        crate::handlers::remove_role_from_user,
     ),
     components(
         schemas(
@@ -78,6 +86,9 @@ use crate::errors::{ErrorDetail, ErrorResponse};
             CreatePracticeTestRequest,
             UpdatePracticeTestRequest,
             SolveTestRequest,
+            AssignRoleRequest,
+            CreateRoleRequest,
+            UpdateRoleRequest,
             // Response schemas
             RegisterResponse,
             AuthResponse,
@@ -90,6 +101,7 @@ use crate::errors::{ErrorDetail, ErrorResponse};
             PracticeTestResponse,
             TestResultResponse,
             SolveTestResponse,
+            RoleResponse,
             PaginationInfo,
             LivenessResponse,
             ReadinessResponse,
