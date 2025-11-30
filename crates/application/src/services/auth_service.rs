@@ -7,7 +7,7 @@ use uuid::Uuid;
 
 use domain::entities::{RefreshToken, User};
 use domain::errors::DomainError;
-use domain::repositories::{RefreshTokenRepository, UserRepository};
+use domain::repositories::{RefreshTokenRepository, RoleRepository, UserRepository};
 
 use crate::dto::{
     AuthResponse, LoginRequest, LogoutRequest, RefreshRequest, RegisterRequest, RegisterResponse,
@@ -119,25 +119,28 @@ pub trait AuthService: Send + Sync {
 }
 
 /// Implementation of the authentication service.
-pub struct AuthServiceImpl<U, R, J, P>
+pub struct AuthServiceImpl<U, R, J, P, RoleRepo>
 where
     U: UserRepository,
     R: RefreshTokenRepository,
     J: JwtOperations,
     P: PasswordOperations,
+    RoleRepo: RoleRepository,
 {
     user_repo: Arc<U>,
     refresh_token_repo: Arc<R>,
     jwt_service: Arc<J>,
     password_service: Arc<P>,
+    role_repo: Arc<RoleRepo>,
 }
 
-impl<U, R, J, P> AuthServiceImpl<U, R, J, P>
+impl<U, R, J, P, RoleRepo> AuthServiceImpl<U, R, J, P, RoleRepo>
 where
     U: UserRepository,
     R: RefreshTokenRepository,
     J: JwtOperations,
     P: PasswordOperations,
+    RoleRepo: RoleRepository,
 {
     /// Creates a new authentication service.
     pub fn new(
@@ -145,12 +148,14 @@ where
         refresh_token_repo: Arc<R>,
         jwt_service: Arc<J>,
         password_service: Arc<P>,
+        role_repo: Arc<RoleRepo>,
     ) -> Self {
         Self {
             user_repo,
             refresh_token_repo,
             jwt_service,
             password_service,
+            role_repo,
         }
     }
 
@@ -175,26 +180,33 @@ where
     }
 
     /// Creates user response from user entity.
-    fn user_to_response(&self, user: &User) -> UserResponse {
-        UserResponse {
+    async fn user_to_response(&self, user: &User) -> Result<UserResponse, AuthError> {
+        let roles = self
+            .user_repo
+            .get_user_roles(user.id)
+            .await
+            .map_err(|e| AuthError::InternalError(e.to_string()))?;
+
+        Ok(UserResponse {
             id: user.id,
             username: user.username.clone(),
             email: user.email.clone(),
             is_active: user.is_active,
-            roles: vec!["user".to_string()], // Default role for now
+            roles,
             created_at: user.created_at,
             updated_at: user.updated_at,
-        }
+        })
     }
 }
 
 #[async_trait]
-impl<U, R, J, P> AuthService for AuthServiceImpl<U, R, J, P>
+impl<U, R, J, P, RoleRepo> AuthService for AuthServiceImpl<U, R, J, P, RoleRepo>
 where
     U: UserRepository + 'static,
     R: RefreshTokenRepository + 'static,
     J: JwtOperations + 'static,
     P: PasswordOperations + 'static,
+    RoleRepo: RoleRepository + 'static,
 {
     async fn register(&self, mut request: RegisterRequest) -> Result<RegisterResponse, AuthError> {
         // Normalize input
@@ -219,6 +231,19 @@ where
         // Create user
         let user = User::new(request.username, request.email, password_hash);
         let created_user = self.user_repo.create(&user).await?;
+
+        // Assign default "user" role
+        let user_role = self
+            .role_repo
+            .find_by_name("user")
+            .await
+            .map_err(|e| AuthError::InternalError(e.to_string()))?
+            .ok_or_else(|| AuthError::InternalError("Default 'user' role not found".to_string()))?;
+
+        self.user_repo
+            .assign_role(created_user.id, user_role.id, None)
+            .await
+            .map_err(|e| AuthError::InternalError(e.to_string()))?;
 
         Ok(RegisterResponse {
             id: created_user.id,
@@ -264,10 +289,17 @@ where
             return Err(AuthError::InvalidCredentials);
         }
 
+        // Get user roles from database
+        let roles = self
+            .user_repo
+            .get_user_roles(user.id)
+            .await
+            .map_err(|e| AuthError::InternalError(e.to_string()))?;
+
         // Generate tokens
         let access_token = self
             .jwt_service
-            .generate_access_token(user.id, vec!["user".to_string()], vec![])
+            .generate_access_token(user.id, roles.clone(), vec![])
             .map_err(|e| AuthError::InternalError(e))?;
 
         let (raw_refresh_token, refresh_token_hash) = self.generate_refresh_token();
@@ -292,7 +324,7 @@ where
             token_type: "Bearer".to_string(),
             expires_in: self.jwt_service.access_token_expiration_minutes() * 60,
             refresh_expires_in: self.jwt_service.refresh_token_expiration_days() * 24 * 60 * 60,
-            user: self.user_to_response(&user),
+            user: self.user_to_response(&user).await?,
         })
     }
 
@@ -337,10 +369,17 @@ where
             return Err(AuthError::AccountDeactivated);
         }
 
+        // Get user roles from database
+        let roles = self
+            .user_repo
+            .get_user_roles(user.id)
+            .await
+            .map_err(|e| AuthError::InternalError(e.to_string()))?;
+
         // Generate new tokens
         let access_token = self
             .jwt_service
-            .generate_access_token(user.id, vec!["user".to_string()], vec![])
+            .generate_access_token(user.id, roles, vec![])
             .map_err(|e| AuthError::InternalError(e))?;
 
         let (new_raw_refresh_token, new_refresh_token_hash) = self.generate_refresh_token();
@@ -406,7 +445,7 @@ where
             return Err(AuthError::AccountDeleted);
         }
 
-        Ok(self.user_to_response(&user))
+        self.user_to_response(&user).await
     }
 }
 

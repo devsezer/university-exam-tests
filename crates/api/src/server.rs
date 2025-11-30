@@ -84,6 +84,8 @@ pub fn create_app(state: AppState) -> Router {
         .merge(routes::auth_routes())
         .merge(routes::test_routes())
         .merge(routes::admin_test_routes())
+        .merge(routes::admin_user_routes())
+        .merge(routes::admin_role_routes())
         .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", ApiDoc::openapi()))
         .layer(CompressionLayer::new())
         .layer(TraceLayer::new_for_http())

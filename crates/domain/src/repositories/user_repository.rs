@@ -44,5 +44,19 @@ pub trait UserRepository: Send + Sync {
         per_page: u32,
         include_deleted: bool,
     ) -> Result<(Vec<User>, u64), DomainError>;
+
+    /// Assigns a role to a user.
+    async fn assign_role(
+        &self,
+        user_id: Uuid,
+        role_id: Uuid,
+        assigned_by: Option<Uuid>,
+    ) -> Result<(), DomainError>;
+
+    /// Removes a role from a user.
+    async fn remove_role(&self, user_id: Uuid, role_id: Uuid) -> Result<(), DomainError>;
+
+    /// Gets all role names for a user.
+    async fn get_user_roles(&self, user_id: Uuid) -> Result<Vec<String>, DomainError>;
 }
 
