@@ -18,7 +18,7 @@ import { DeleteConfirmationComponent } from '../../../../shared/components/delet
           <h1 class="text-3xl font-bold text-gray-900">Dersler</h1>
           <p class="mt-2 text-sm text-gray-600">Dersleri yönetin (Matematik, Fizik, Türkçe vb.)</p>
         </div>
-        <a routerLink="/admin/lessons/new" 
+        <a routerLink="/admin/lessons/new"
            class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700">
           <svg class="-ml-1 mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -50,11 +50,11 @@ import { DeleteConfirmationComponent } from '../../../../shared/components/delet
                   </div>
                 </div>
                 <div class="flex items-center space-x-4">
-                  <a [routerLink]="['/admin/lessons', lesson.id, 'edit']" 
+                  <a [routerLink]="['/admin/lessons', lesson.id, 'edit']"
                      class="text-primary-600 hover:text-primary-900 text-sm font-medium">
                     Düzenle
                   </a>
-                  <button (click)="confirmDelete(lesson)" 
+                  <button (click)="confirmDelete(lesson)"
                           class="text-red-600 hover:text-red-900 text-sm font-medium">
                     Sil
                   </button>
@@ -72,7 +72,7 @@ import { DeleteConfirmationComponent } from '../../../../shared/components/delet
             <h3 class="mt-2 text-sm font-medium text-gray-900">Henüz ders yok</h3>
             <p class="mt-1 text-sm text-gray-500">İlk dersi ekleyerek başlayın.</p>
             <div class="mt-6">
-              <a routerLink="/admin/lessons/new" 
+              <a routerLink="/admin/lessons/new"
                  class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700">
                 Yeni Ders Ekle
               </a>

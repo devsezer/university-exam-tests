@@ -37,7 +37,7 @@ import { RouterModule } from '@angular/router';
             <div class="bg-gradient-to-r from-primary-50 to-purple-50 px-6 py-4 border-t border-primary-100">
               <div class="text-sm">
                 <a routerLink="/admin/users" class="font-semibold text-primary-700 hover:text-primary-900 inline-flex items-center gap-2 group-hover:gap-3 transition-all duration-200">
-                  Yönetmek için tıklayın 
+                  Yönetmek için tıklayın
                   <span class="group-hover:translate-x-1 transition-transform duration-200" aria-hidden="true">&rarr;</span>
                 </a>
               </div>
@@ -66,7 +66,7 @@ import { RouterModule } from '@angular/router';
             <div class="bg-gradient-to-r from-secondary-50 to-cyan-50 px-6 py-4 border-t border-secondary-100">
               <div class="text-sm">
                 <a routerLink="/admin/exam-types" class="font-semibold text-secondary-700 hover:text-secondary-900 inline-flex items-center gap-2 group-hover:gap-3 transition-all duration-200">
-                  Yönetmek için tıklayın 
+                  Yönetmek için tıklayın
                   <span class="group-hover:translate-x-1 transition-transform duration-200" aria-hidden="true">&rarr;</span>
                 </a>
               </div>
@@ -95,7 +95,7 @@ import { RouterModule } from '@angular/router';
             <div class="bg-gradient-to-r from-teal-50 to-green-50 px-6 py-4 border-t border-teal-100">
               <div class="text-sm">
                 <a routerLink="/admin/lessons" class="font-semibold text-teal-700 hover:text-teal-900 inline-flex items-center gap-2 group-hover:gap-3 transition-all duration-200">
-                  Yönetmek için tıklayın 
+                  Yönetmek için tıklayın
                   <span class="group-hover:translate-x-1 transition-transform duration-200" aria-hidden="true">&rarr;</span>
                 </a>
               </div>
@@ -124,7 +124,7 @@ import { RouterModule } from '@angular/router';
             <div class="bg-gradient-to-r from-success-50 to-emerald-50 px-6 py-4 border-t border-success-100">
               <div class="text-sm">
                 <a routerLink="/admin/subjects" class="font-semibold text-success-700 hover:text-success-900 inline-flex items-center gap-2 group-hover:gap-3 transition-all duration-200">
-                  Yönetmek için tıklayın 
+                  Yönetmek için tıklayın
                   <span class="group-hover:translate-x-1 transition-transform duration-200" aria-hidden="true">&rarr;</span>
                 </a>
               </div>
@@ -153,7 +153,7 @@ import { RouterModule } from '@angular/router';
             <div class="bg-gradient-to-r from-warning-50 to-amber-50 px-6 py-4 border-t border-warning-100">
               <div class="text-sm">
                 <a routerLink="/admin/test-books" class="font-semibold text-warning-700 hover:text-warning-900 inline-flex items-center gap-2 group-hover:gap-3 transition-all duration-200">
-                  Yönetmek için tıklayın 
+                  Yönetmek için tıklayın
                   <span class="group-hover:translate-x-1 transition-transform duration-200" aria-hidden="true">&rarr;</span>
                 </a>
               </div>
@@ -182,7 +182,7 @@ import { RouterModule } from '@angular/router';
             <div class="bg-gradient-to-r from-danger-50 to-rose-50 px-6 py-4 border-t border-danger-100">
               <div class="text-sm">
                 <a routerLink="/admin/practice-tests" class="font-semibold text-danger-700 hover:text-danger-900 inline-flex items-center gap-2 group-hover:gap-3 transition-all duration-200">
-                  Yönetmek için tıklayın 
+                  Yönetmek için tıklayın
                   <span class="group-hover:translate-x-1 transition-transform duration-200" aria-hidden="true">&rarr;</span>
                 </a>
               </div>
@@ -211,7 +211,7 @@ import { RouterModule } from '@angular/router';
             <div class="bg-gradient-to-r from-primary-50 via-indigo-50 to-purple-50 px-6 py-4 border-t border-primary-200">
               <div class="text-sm">
                 <a routerLink="/admin/roles" class="font-semibold text-primary-700 hover:text-primary-900 inline-flex items-center gap-2 group-hover:gap-3 transition-all duration-200">
-                  Görüntülemek için tıklayın 
+                  Görüntülemek için tıklayın
                   <span class="group-hover:translate-x-1 transition-transform duration-200" aria-hidden="true">&rarr;</span>
                 </a>
               </div>
