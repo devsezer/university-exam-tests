@@ -980,7 +980,31 @@ pub async fn create_practice_test(
     ))
 }
 
-/// Get practice test by ID
+/// Get practice test by ID (Public)
+#[utoipa::path(
+    get,
+    path = "/api/v1/practice-tests/{id}",
+    params(("id" = Uuid, Path, description = "Practice test ID")),
+    responses(
+        (status = 200, description = "Practice test retrieved", body = ApiResponse<PracticeTestResponse>),
+        (status = 404, description = "Practice test not found"),
+    ),
+    tag = "tests"
+)]
+pub async fn get_practice_test_public(
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+) -> Result<Json<ApiResponse<PracticeTestResponse>>, AppError> {
+    let result = state
+        .test_management_service
+        .get_practice_test(id)
+        .await
+        .map_err(|e| handle_service_error("service_call", e))?;
+
+    Ok(Json(ApiResponse::success(result.into())))
+}
+
+/// Get practice test by ID (Admin only)
 #[utoipa::path(
     get,
     path = "/api/v1/admin/practice-tests/{id}",

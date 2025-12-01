@@ -6,7 +6,7 @@ use axum::{
 use crate::handlers::{
     create_exam_type, create_lesson, create_practice_test, create_subject, create_test_book,
     delete_exam_type, delete_lesson, delete_practice_test, delete_subject, delete_test_book,
-    get_exam_type, get_lesson, get_practice_test, get_result, get_subject, get_test_book,
+    get_exam_type, get_lesson, get_practice_test, get_practice_test_public, get_result, get_subject, get_test_book,
     list_admin_exam_types, list_admin_lessons, list_admin_practice_tests, list_admin_subjects,
     list_admin_test_books, list_exam_types, list_lessons, list_my_results, list_practice_tests,
     list_subjects, list_test_book_subjects, list_test_books, solve_test, update_exam_type,
@@ -23,6 +23,7 @@ pub fn test_routes() -> Router<AppState> {
         .route("/api/v1/test-books", get(list_test_books))
         .route("/api/v1/test-books/{id}/subjects", get(list_test_book_subjects))
         .route("/api/v1/practice-tests", get(list_practice_tests))
+        .route("/api/v1/practice-tests/{id}", get(get_practice_test_public))
         .route("/api/v1/tests/{id}/solve", post(solve_test))
         .route("/api/v1/my-results", get(list_my_results))
         .route("/api/v1/my-results/{id}", get(get_result))
