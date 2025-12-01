@@ -22,6 +22,13 @@ pub trait TestBookRepository: Send + Sync {
     /// Finds test books by lesson ID.
     async fn find_by_lesson_id(&self, lesson_id: Uuid) -> Result<Vec<TestBook>, DomainError>;
 
+    /// Finds test books by exam type ID and lesson ID.
+    async fn find_by_exam_type_and_lesson(
+        &self,
+        exam_type_id: Uuid,
+        lesson_id: Uuid,
+    ) -> Result<Vec<TestBook>, DomainError>;
+
     /// Updates an existing test book.
     async fn update(&self, test_book: &TestBook) -> Result<TestBook, DomainError>;
 

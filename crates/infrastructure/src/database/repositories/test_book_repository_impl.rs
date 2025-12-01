@@ -134,6 +134,28 @@ impl TestBookRepository for PgTestBookRepository {
         Ok(rows.into_iter().map(|r| r.into()).collect())
     }
 
+    async fn find_by_exam_type_and_lesson(
+        &self,
+        exam_type_id: Uuid,
+        lesson_id: Uuid,
+    ) -> Result<Vec<TestBook>, DomainError> {
+        let rows = sqlx::query_as::<_, TestBookRow>(
+            r#"
+            SELECT id, name, lesson_id, exam_type_id, published_year, created_at
+            FROM test_books
+            WHERE exam_type_id = $1 AND lesson_id = $2
+            ORDER BY name ASC
+            "#,
+        )
+        .bind(exam_type_id)
+        .bind(lesson_id)
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| DomainError::DatabaseError(e.to_string()))?;
+
+        Ok(rows.into_iter().map(|r| r.into()).collect())
+    }
+
     async fn update(&self, test_book: &TestBook) -> Result<TestBook, DomainError> {
         let row = sqlx::query_as::<_, TestBookRow>(
             r#"

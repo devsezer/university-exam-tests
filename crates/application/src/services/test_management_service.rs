@@ -124,6 +124,11 @@ pub trait TestManagementService: Send + Sync {
         &self,
         subject_id: Uuid,
     ) -> Result<Vec<TestBookResponse>, TestManagementError>;
+    async fn list_test_books_by_exam_type_and_lesson(
+        &self,
+        exam_type_id: Uuid,
+        lesson_id: Uuid,
+    ) -> Result<Vec<TestBookResponse>, TestManagementError>;
     async fn list_all_test_books(&self) -> Result<Vec<TestBookResponse>, TestManagementError>;
     async fn update_test_book(
         &self,
@@ -142,6 +147,10 @@ pub trait TestManagementService: Send + Sync {
         &self,
         test_book_id: Uuid,
     ) -> Result<Vec<PracticeTestResponse>, TestManagementError>;
+    async fn list_practice_tests_grouped_by_subject(
+        &self,
+        test_book_id: Uuid,
+    ) -> Result<std::collections::HashMap<Uuid, Vec<PracticeTestResponse>>, TestManagementError>;
     async fn list_all_practice_tests(&self) -> Result<Vec<PracticeTestResponse>, TestManagementError>;
     async fn update_practice_test(
         &self,
@@ -661,6 +670,37 @@ where
         Ok(responses)
     }
 
+    async fn list_test_books_by_exam_type_and_lesson(
+        &self,
+        exam_type_id: Uuid,
+        lesson_id: Uuid,
+    ) -> Result<Vec<TestBookResponse>, TestManagementError> {
+        let test_books = self
+            .test_book_repo
+            .find_by_exam_type_and_lesson(exam_type_id, lesson_id)
+            .await?;
+
+        // Get subject IDs for each test book
+        let mut responses = Vec::new();
+        for tb in test_books {
+            let subject_ids = self
+                .test_book_subject_repo
+                .find_subject_ids_by_test_book_id(tb.id)
+                .await?;
+            responses.push(TestBookResponse {
+                id: tb.id,
+                name: tb.name,
+                lesson_id: tb.lesson_id,
+                exam_type_id: tb.exam_type_id,
+                subject_ids,
+                published_year: tb.published_year,
+                created_at: tb.created_at,
+            });
+        }
+
+        Ok(responses)
+    }
+
     async fn list_all_test_books(&self) -> Result<Vec<TestBookResponse>, TestManagementError> {
         let test_books = self.test_book_repo.list_all().await?;
 
@@ -847,6 +887,46 @@ where
                 created_at: pt.created_at,
             })
             .collect())
+    }
+
+    async fn list_practice_tests_grouped_by_subject(
+        &self,
+        test_book_id: Uuid,
+    ) -> Result<std::collections::HashMap<Uuid, Vec<PracticeTestResponse>>, TestManagementError> {
+        // Verify test book exists
+        self.test_book_repo
+            .find_by_id(test_book_id)
+            .await?
+            .ok_or(TestManagementError::TestBookNotFound)?;
+
+        let practice_tests = self
+            .practice_test_repo
+            .find_by_test_book_id(test_book_id)
+            .await?;
+
+        // Group by subject_id
+        let mut grouped: std::collections::HashMap<Uuid, Vec<PracticeTestResponse>> =
+            std::collections::HashMap::new();
+
+        for pt in practice_tests {
+            let response = PracticeTestResponse {
+                id: pt.id,
+                name: pt.name,
+                test_number: pt.test_number,
+                question_count: pt.question_count,
+                answer_key: pt.answer_key,
+                test_book_id: pt.test_book_id,
+                subject_id: pt.subject_id,
+                created_at: pt.created_at,
+            };
+
+            grouped
+                .entry(pt.subject_id)
+                .or_insert_with(Vec::new)
+                .push(response);
+        }
+
+        Ok(grouped)
     }
 
     async fn list_all_practice_tests(&self) -> Result<Vec<PracticeTestResponse>, TestManagementError> {

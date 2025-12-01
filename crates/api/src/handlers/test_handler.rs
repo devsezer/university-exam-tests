@@ -788,11 +788,15 @@ pub async fn list_test_book_subjects(
     )))
 }
 
-/// List test books by subject
+/// List test books by subject, exam type and lesson, or all
 #[utoipa::path(
     get,
     path = "/api/v1/test-books",
-    params(("subject_id" = Option<Uuid>, Query, description = "Filter by subject ID")),
+    params(
+        ("subject_id" = Option<Uuid>, Query, description = "Filter by subject ID"),
+        ("exam_type_id" = Option<Uuid>, Query, description = "Filter by exam type ID"),
+        ("lesson_id" = Option<Uuid>, Query, description = "Filter by lesson ID")
+    ),
     responses(
         (status = 200, description = "Test books retrieved", body = ApiResponse<Vec<TestBookResponse>>),
     ),
@@ -805,19 +809,38 @@ pub async fn list_test_books(
     let subject_id = params
         .get("subject_id")
         .and_then(|s| Uuid::parse_str(s).ok());
+    let exam_type_id = params
+        .get("exam_type_id")
+        .and_then(|s| Uuid::parse_str(s).ok());
+    let lesson_id = params
+        .get("lesson_id")
+        .and_then(|s| Uuid::parse_str(s).ok());
 
-    let results = if let Some(subject_id) = subject_id {
-        state
-            .test_management_service
-            .list_test_books_by_subject(subject_id)
-            .await
-            .map_err(|e| handle_service_error("service_call", e))?
-    } else {
-        state
-            .test_management_service
-            .list_all_test_books()
-            .await
-            .map_err(|e| handle_service_error("service_call", e))?
+    let results = match (subject_id, exam_type_id, lesson_id) {
+        // If subject_id is provided, use subject filter (backward compatibility)
+        (Some(subject_id), _, _) => {
+            state
+                .test_management_service
+                .list_test_books_by_subject(subject_id)
+                .await
+                .map_err(|e| handle_service_error("service_call", e))?
+        }
+        // If both exam_type_id and lesson_id are provided, use combined filter
+        (None, Some(exam_type_id), Some(lesson_id)) => {
+            state
+                .test_management_service
+                .list_test_books_by_exam_type_and_lesson(exam_type_id, lesson_id)
+                .await
+                .map_err(|e| handle_service_error("service_call", e))?
+        }
+        // Otherwise, list all
+        _ => {
+            state
+                .test_management_service
+                .list_all_test_books()
+                .await
+                .map_err(|e| handle_service_error("service_call", e))?
+        }
     };
 
     Ok(Json(ApiResponse::success(
@@ -1069,6 +1092,45 @@ pub async fn list_practice_tests(
     Ok(Json(ApiResponse::success(
         results.into_iter().map(|r| r.into()).collect(),
     )))
+}
+
+/// List practice tests grouped by subject for a test book
+#[utoipa::path(
+    get,
+    path = "/api/v1/test-books/{id}/practice-tests-grouped",
+    params(("id" = Uuid, Path, description = "Test book ID")),
+    responses(
+        (status = 200, description = "Practice tests grouped by subject", body = ApiResponse<serde_json::Value>),
+        (status = 404, description = "Test book not found"),
+    ),
+    tag = "tests"
+)]
+pub async fn list_practice_tests_grouped_by_subject(
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+) -> Result<Json<ApiResponse<serde_json::Value>>, AppError> {
+    let grouped = state
+        .test_management_service
+        .list_practice_tests_grouped_by_subject(id)
+        .await
+        .map_err(|e| handle_service_error("service_call", e))?;
+
+    // Convert HashMap<Uuid, Vec<PracticeTestResponse>> to HashMap<String, Vec<PracticeTestResponse>>
+    // for JSON serialization (Uuid keys need to be strings in JSON)
+    let mut json_map = serde_json::Map::new();
+    for (subject_id, tests) in grouped {
+        let key = subject_id.to_string();
+        let value = serde_json::to_value(
+            tests
+                .into_iter()
+                .map(|r| r.into())
+                .collect::<Vec<crate::dto::response::PracticeTestResponse>>(),
+        )
+        .map_err(|_| AppError::InternalServerError)?;
+        json_map.insert(key, value);
+    }
+
+    Ok(Json(ApiResponse::success(serde_json::Value::Object(json_map))))
 }
 
 /// List all practice tests (Admin only)

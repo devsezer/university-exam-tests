@@ -62,6 +62,10 @@ export interface SolveTestResponse {
   hours_until_retake?: number;
 }
 
+export interface PracticeTestsGrouped {
+  [subjectId: string]: PracticeTest[];
+}
+
 // Admin Request DTOs
 export interface CreateExamTypeRequest {
   name: string;
