@@ -12,8 +12,8 @@ import { LoadingSpinnerComponent } from '../../../../shared/components/loading-s
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, RouterModule, ErrorMessageComponent, LoadingSpinnerComponent],
   template: `
-    <div class="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 animate-fade-in bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800">
-      <div class="max-w-md w-full space-y-8 animate-scale-in">
+    <div class="fixed inset-0 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 animate-fade-in bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 overflow-y-auto">
+      <div class="max-w-md w-full space-y-8 animate-scale-in my-auto">
         <div class="bg-white rounded-2xl p-8 shadow-2xl">
           <div class="mb-8">
             <h2 class="text-center text-4xl font-extrabold text-gray-900 mb-2">
@@ -80,7 +80,13 @@ import { LoadingSpinnerComponent } from '../../../../shared/components/loading-s
       </div>
     </div>
   `,
-  styles: []
+  styles: [`
+    :host {
+      display: block;
+      width: 100%;
+      overflow-x: hidden;
+    }
+  `]
 })
 export class LoginComponent {
   loginForm: FormGroup;

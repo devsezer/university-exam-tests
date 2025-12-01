@@ -14,7 +14,7 @@ import { ErrorMessageComponent } from '../../../../shared/components/error-messa
   template: `
     <div class="max-w-2xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
       <div class="mb-6">
-        <button (click)="goBack()" 
+        <button (click)="goBack()"
                 class="text-sm text-gray-500 hover:text-gray-700 mb-4">
           ← Geri Dön
         </button>
@@ -34,7 +34,7 @@ import { ErrorMessageComponent } from '../../../../shared/components/error-messa
           <form [formGroup]="form" (ngSubmit)="onSubmit()" class="space-y-6">
             <div>
               <label for="exam_type_id" class="block text-sm font-medium text-gray-700">Sınav Türü *</label>
-              <select id="exam_type_id" 
+              <select id="exam_type_id"
                       formControlName="exam_type_id"
                       (change)="onExamTypeChange()"
                       class="mt-1 block w-full px-4 py-3 rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
@@ -43,7 +43,7 @@ import { ErrorMessageComponent } from '../../../../shared/components/error-messa
                   {{ examType.name }}
                 </option>
               </select>
-              <div *ngIf="form.get('exam_type_id')?.invalid && form.get('exam_type_id')?.touched" 
+              <div *ngIf="form.get('exam_type_id')?.invalid && form.get('exam_type_id')?.touched"
                    class="mt-1 text-sm text-red-600">
                 Sınav türü seçilmelidir
               </div>
@@ -51,7 +51,7 @@ import { ErrorMessageComponent } from '../../../../shared/components/error-messa
 
             <div>
               <label for="lesson_id" class="block text-sm font-medium text-gray-700">Ders *</label>
-              <select id="lesson_id" 
+              <select id="lesson_id"
                       formControlName="lesson_id"
                       (change)="onLessonChange()"
                       [disabled]="!form.get('exam_type_id')?.value"
@@ -61,7 +61,7 @@ import { ErrorMessageComponent } from '../../../../shared/components/error-messa
                   {{ lesson.name }}
                 </option>
               </select>
-              <div *ngIf="form.get('lesson_id')?.invalid && form.get('lesson_id')?.touched" 
+              <div *ngIf="form.get('lesson_id')?.invalid && form.get('lesson_id')?.touched"
                    class="mt-1 text-sm text-red-600">
                 Ders seçilmelidir
               </div>
@@ -74,12 +74,12 @@ import { ErrorMessageComponent } from '../../../../shared/components/error-messa
               </div>
               <div *ngIf="!isLoadingSubjects()" class="space-y-2 max-h-60 overflow-y-auto border border-gray-300 rounded-md p-3">
                 <div *ngFor="let subject of filteredSubjects(); let i = index" class="flex items-center">
-                  <input type="checkbox" 
+                  <input type="checkbox"
                          [id]="'subject-' + subject.id"
                          [checked]="isSubjectSelected(subject.id)"
                          (change)="onSubjectToggle(subject.id, $event)"
                          class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded">
-                  <label [for]="'subject-' + subject.id" 
+                  <label [for]="'subject-' + subject.id"
                          class="ml-2 text-sm text-gray-700 cursor-pointer">
                     {{ subject.name }}
                   </label>
@@ -88,7 +88,7 @@ import { ErrorMessageComponent } from '../../../../shared/components/error-messa
                   Bu ders ve sınav türü için konu bulunamadı.
                 </div>
               </div>
-              <div *ngIf="form.get('subject_ids')?.invalid && form.get('subject_ids')?.touched" 
+              <div *ngIf="form.get('subject_ids')?.invalid && form.get('subject_ids')?.touched"
                    class="mt-1 text-sm text-red-600">
                 En az bir konu seçilmelidir
               </div>
@@ -96,12 +96,12 @@ import { ErrorMessageComponent } from '../../../../shared/components/error-messa
 
             <div>
               <label for="name" class="block text-sm font-medium text-gray-700">Ad *</label>
-              <input id="name" 
-                     type="text" 
+              <input id="name"
+                     type="text"
                      formControlName="name"
                      class="mt-1 block w-full px-4 py-3 rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
                      placeholder="Örn: Limit Yayınları TYT Matematik">
-              <div *ngIf="form.get('name')?.invalid && form.get('name')?.touched" 
+              <div *ngIf="form.get('name')?.invalid && form.get('name')?.touched"
                    class="mt-1 text-sm text-red-600">
                 Ad gereklidir (1-255 karakter)
               </div>
@@ -109,26 +109,26 @@ import { ErrorMessageComponent } from '../../../../shared/components/error-messa
 
             <div>
               <label for="published_year" class="block text-sm font-medium text-gray-700">Yayın Yılı *</label>
-              <input id="published_year" 
-                     type="number" 
+              <input id="published_year"
+                     type="number"
                      formControlName="published_year"
                      min="2000"
                      max="2100"
                      class="mt-1 block w-full px-4 py-3 rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
                      placeholder="2024">
-              <div *ngIf="form.get('published_year')?.invalid && form.get('published_year')?.touched" 
+              <div *ngIf="form.get('published_year')?.invalid && form.get('published_year')?.touched"
                    class="mt-1 text-sm text-red-600">
                 Yayın yılı 2000-2100 arasında olmalıdır
               </div>
             </div>
 
             <div class="flex justify-end space-x-4">
-              <button type="button" 
+              <button type="button"
                       (click)="goBack()"
                       class="px-6 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
                 İptal
               </button>
-              <button type="submit" 
+              <button type="submit"
                       [disabled]="isSubmitting() || form.invalid"
                       class="px-6 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed">
                 <span *ngIf="!isSubmitting()">{{ isEditMode() ? 'Güncelle' : 'Kaydet' }}</span>
@@ -233,11 +233,11 @@ export class TestBookFormComponent implements OnInit {
   onExamTypeChange(): void {
     const examTypeId = this.form.get('exam_type_id')?.value;
     const lessonId = this.form.get('lesson_id')?.value;
-    
+
     // Reset subjects
     this.clearSubjectIds();
     this.filteredSubjects.set([]);
-    
+
     if (examTypeId && lessonId) {
       this.loadSubjectsForLessonAndExamType(lessonId, examTypeId);
     }
@@ -246,11 +246,11 @@ export class TestBookFormComponent implements OnInit {
   onLessonChange(): void {
     const examTypeId = this.form.get('exam_type_id')?.value;
     const lessonId = this.form.get('lesson_id')?.value;
-    
+
     // Reset subjects
     this.clearSubjectIds();
     this.filteredSubjects.set([]);
-    
+
     if (examTypeId && lessonId) {
       this.loadSubjectsForLessonAndExamType(lessonId, examTypeId);
     }
@@ -268,7 +268,7 @@ export class TestBookFormComponent implements OnInit {
   onSubjectToggle(subjectId: string, event: Event): void {
     const checked = (event.target as HTMLInputElement).checked;
     const subjectIdsArray = this.subjectIdsFormArray;
-    
+
     if (checked) {
       subjectIdsArray.push(this.fb.control(subjectId));
     } else {
@@ -315,6 +315,8 @@ export class TestBookFormComponent implements OnInit {
                   this.subjectIdsFormArray.push(this.fb.control(subjectId));
                 });
               }
+              // Hide loading spinner after subjects are loaded
+              this.isLoading.set(false);
             });
           } else {
             this.isLoading.set(false);
@@ -337,7 +339,7 @@ export class TestBookFormComponent implements OnInit {
       this.errorMessage.set(null);
 
       const formValue = this.form.value;
-      
+
       if (this.isEditMode() && this.testBookId) {
         const request: UpdateTestBookRequest = {
           name: formValue.name,

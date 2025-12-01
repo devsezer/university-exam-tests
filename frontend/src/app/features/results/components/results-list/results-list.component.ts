@@ -1,8 +1,10 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { forkJoin } from 'rxjs';
 import { ResultsService } from '../../services/results.service';
-import { TestResult } from '../../../../models/test.models';
+import { TestService } from '../../../tests/services/test.service';
+import { TestResult, PracticeTest, Subject } from '../../../../models/test.models';
 import { LoadingSpinnerComponent } from '../../../../shared/components/loading-spinner/loading-spinner.component';
 import { ErrorMessageComponent } from '../../../../shared/components/error-message/error-message.component';
 
@@ -40,7 +42,7 @@ import { ErrorMessageComponent } from '../../../../shared/components/error-messa
                       </div>
                       <div class="ml-4">
                         <div class="text-sm font-medium text-gray-900">
-                          Test ID: {{ result.practice_test_id.substring(0, 8) }}...
+                          {{ getTestDisplayName(result) }}
                         </div>
                         <div class="text-sm text-gray-500">
                           {{ formatDate(result.solved_at) }}
@@ -91,10 +93,15 @@ import { ErrorMessageComponent } from '../../../../shared/components/error-messa
 })
 export class ResultsListComponent implements OnInit {
   results = signal<TestResult[]>([]);
+  practiceTests = signal<Map<string, PracticeTest>>(new Map());
+  subjects = signal<Map<string, Subject>>(new Map());
   isLoading = signal(true);
   errorMessage = signal<string | null>(null);
 
-  constructor(private resultsService: ResultsService) {}
+  constructor(
+    private resultsService: ResultsService,
+    private testService: TestService
+  ) {}
 
   ngOnInit(): void {
     this.loadResults();
@@ -102,20 +109,104 @@ export class ResultsListComponent implements OnInit {
 
   loadResults(): void {
     this.isLoading.set(true);
+    this.errorMessage.set(null);
     this.resultsService.getMyResults().subscribe({
       next: (response) => {
-        this.isLoading.set(false);
         if (response.success && response.data) {
-          this.results.set(response.data);
+          const results = Array.isArray(response.data) ? response.data : [];
+          this.results.set(results);
+          
+          // Load practice tests and subjects for all results
+          if (results.length > 0) {
+            this.loadPracticeTestsAndSubjects(results);
+          } else {
+            this.isLoading.set(false);
+          }
         } else {
-          this.errorMessage.set('Sonuçlar yüklenemedi.');
+          this.results.set([]);
+          this.isLoading.set(false);
+          this.errorMessage.set(response.error?.message || 'Sonuçlar yüklenemedi.');
+        }
+      },
+      error: (error) => {
+        this.isLoading.set(false);
+        this.results.set([]);
+        this.errorMessage.set(error.error?.error?.message || 'Sonuçlar yüklenirken bir hata oluştu.');
+      }
+    });
+  }
+
+  loadPracticeTestsAndSubjects(results: TestResult[]): void {
+    // Get unique practice test IDs
+    const practiceTestIds = [...new Set(results.map(r => r.practice_test_id))];
+    
+    // Load all practice tests
+    const practiceTestRequests = practiceTestIds.map(id => 
+      this.testService.getPracticeTest(id)
+    );
+
+    forkJoin(practiceTestRequests).subscribe({
+      next: (responses) => {
+        const practiceTestsMap = new Map<string, PracticeTest>();
+        const subjectIds = new Set<string>();
+
+        responses.forEach((response, index) => {
+          if (response.success && response.data) {
+            const practiceTest = response.data;
+            practiceTestsMap.set(practiceTest.id, practiceTest);
+            subjectIds.add(practiceTest.subject_id);
+          }
+        });
+
+        this.practiceTests.set(practiceTestsMap);
+
+        // Load all subjects
+        if (subjectIds.size > 0) {
+          this.loadSubjects(Array.from(subjectIds));
+        } else {
+          this.isLoading.set(false);
         }
       },
       error: () => {
         this.isLoading.set(false);
-        this.errorMessage.set('Sonuçlar yüklenirken bir hata oluştu.');
+        // Continue even if practice tests fail to load
       }
     });
+  }
+
+  loadSubjects(subjectIds: string[]): void {
+    // Load subjects - get all subjects and filter
+    this.testService.getSubjects(undefined, undefined).subscribe({
+      next: (response) => {
+        if (response.success && response.data) {
+          const subjectsMap = new Map<string, Subject>();
+          response.data.forEach(subject => {
+            if (subjectIds.includes(subject.id)) {
+              subjectsMap.set(subject.id, subject);
+            }
+          });
+          this.subjects.set(subjectsMap);
+        }
+        this.isLoading.set(false);
+      },
+      error: () => {
+        this.isLoading.set(false);
+        // Continue even if subjects fail to load
+      }
+    });
+  }
+
+  getTestDisplayName(result: TestResult): string {
+    const practiceTest = this.practiceTests().get(result.practice_test_id);
+    if (!practiceTest) {
+      return `Test ID: ${result.practice_test_id.substring(0, 8)}...`;
+    }
+
+    const subject = this.subjects().get(practiceTest.subject_id);
+    const subjectName = subject?.name || 'Bilinmeyen Konu';
+    const testName = practiceTest.name;
+
+    return `${subjectName} - ${testName}`;
   }
 
   formatDate(dateString: string): string {

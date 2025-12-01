@@ -8,7 +8,7 @@ import { AuthService } from '../../../core/services/auth.service';
   standalone: true,
   imports: [CommonModule, RouterModule],
   template: `
-    <header class="sticky top-0 z-50 glass-strong shadow-lg backdrop-blur-xl border-b border-white/20 animate-slide-down">
+    <header class="sticky top-0 z-50 glass-strong shadow-lg backdrop-blur-xl border-b border-white/20 animate-slide-down bg-gradient-to-r from-primary-600/90 via-primary-700/90 to-primary-800/90">
       <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
           <div class="flex">

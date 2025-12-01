@@ -2,7 +2,8 @@ import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ResultsService } from '../../services/results.service';
-import { TestResult } from '../../../../models/test.models';
+import { TestService } from '../../../tests/services/test.service';
+import { TestResult, PracticeTest } from '../../../../models/test.models';
 import { LoadingSpinnerComponent } from '../../../../shared/components/loading-spinner/loading-spinner.component';
 import { ErrorMessageComponent } from '../../../../shared/components/error-message/error-message.component';
 
@@ -58,12 +59,23 @@ import { ErrorMessageComponent } from '../../../../shared/components/error-messa
             <h2 class="text-xl font-bold text-gray-900 mb-4">Cevaplar</h2>
             <div class="grid grid-cols-10 gap-2">
               <div *ngFor="let answer of getAnswers(); let i = index" 
-                   class="text-center p-2 rounded"
+                   class="text-center p-2 rounded border-2"
                    [class.bg-green-100]="answer.status === 'correct'"
+                   [class.border-green-500]="answer.status === 'correct'"
                    [class.bg-red-100]="answer.status === 'wrong'"
-                   [class.bg-gray-100]="answer.status === 'empty'">
+                   [class.border-red-500]="answer.status === 'wrong'"
+                   [class.bg-gray-100]="answer.status === 'empty'"
+                   [class.border-gray-300]="answer.status === 'empty'">
                 <div class="text-xs text-gray-600">{{ i + 1 }}</div>
-                <div class="font-medium">{{ answer.user || '_' }}</div>
+                <div class="font-medium" 
+                     [class.text-green-700]="answer.status === 'correct'"
+                     [class.text-red-700]="answer.status === 'wrong'"
+                     [class.text-gray-700]="answer.status === 'empty'">
+                  {{ answer.user || '_' }}
+                </div>
+                <div *ngIf="answer.status === 'wrong'" class="text-xs text-gray-500 mt-1">
+                  Doğru: {{ answer.correct }}
+                </div>
               </div>
             </div>
           </div>
@@ -79,13 +91,15 @@ import { ErrorMessageComponent } from '../../../../shared/components/error-messa
 })
 export class ResultDetailComponent implements OnInit {
   result = signal<TestResult | null>(null);
+  practiceTest = signal<PracticeTest | null>(null);
   isLoading = signal(true);
   errorMessage = signal<string | null>(null);
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
-    private resultsService: ResultsService
+    private resultsService: ResultsService,
+    private testService: TestService
   ) {}
 
   ngOnInit(): void {
@@ -102,10 +116,12 @@ export class ResultDetailComponent implements OnInit {
     this.isLoading.set(true);
     this.resultsService.getResult(id).subscribe({
       next: (response) => {
-        this.isLoading.set(false);
         if (response.success && response.data) {
           this.result.set(response.data);
+          // Load practice test to get answer key
+          this.loadPracticeTest(response.data.practice_test_id);
         } else {
+          this.isLoading.set(false);
           this.errorMessage.set('Sonuç bulunamadı.');
         }
       },
@@ -116,18 +132,57 @@ export class ResultDetailComponent implements OnInit {
     });
   }
 
-  getAnswers(): Array<{ user: string; status: 'correct' | 'wrong' | 'empty' }> {
-    const result = this.result();
-    if (!result) return [];
-
-    // This is a simplified version - in a real app, you'd compare with the correct answers
-    return result.user_answers.split('').map((answer, index) => {
-      if (answer === '_') {
-        return { user: '', status: 'empty' as const };
+  loadPracticeTest(id: string): void {
+    this.testService.getPracticeTest(id).subscribe({
+      next: (response) => {
+        this.isLoading.set(false);
+        if (response.success && response.data) {
+          this.practiceTest.set(response.data);
+        } else {
+          this.errorMessage.set('Test bilgileri yüklenemedi.');
+        }
+      },
+      error: () => {
+        this.isLoading.set(false);
+        this.errorMessage.set('Test bilgileri yüklenirken bir hata oluştu.');
       }
-      // For demo purposes, we'll mark as correct/wrong randomly
-      // In real app, compare with practice test answer key
-      return { user: answer, status: 'correct' as const };
+    });
+  }
+
+  getAnswers(): Array<{ user: string; correct: string; status: 'correct' | 'wrong' | 'empty' }> {
+    const result = this.result();
+    const practiceTest = this.practiceTest();
+    
+    if (!result || !practiceTest) return [];
+
+    const userAnswers = result.user_answers.split('');
+    const correctAnswers = practiceTest.answer_key.split('');
+
+    return userAnswers.map((userAnswer, index) => {
+      const correctAnswer = correctAnswers[index] || '';
+      
+      if (userAnswer === '_' || userAnswer === ' ') {
+        return { 
+          user: '', 
+          correct: correctAnswer,
+          status: 'empty' as const 
+        };
+      }
+      
+      // Compare user answer with correct answer (case insensitive)
+      if (userAnswer.toUpperCase() === correctAnswer.toUpperCase()) {
+        return { 
+          user: userAnswer, 
+          correct: correctAnswer,
+          status: 'correct' as const 
+        };
+      } else {
+        return { 
+          user: userAnswer, 
+          correct: correctAnswer,
+          status: 'wrong' as const 
+        };
+      }
     });
   }
 
