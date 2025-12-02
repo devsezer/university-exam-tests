@@ -6,11 +6,12 @@ import { AdminService } from '../../services/admin.service';
 import { PracticeTest, TestBook, Subject, CreatePracticeTestRequest, UpdatePracticeTestRequest } from '../../../../models/test.models';
 import { LoadingSpinnerComponent } from '../../../../shared/components/loading-spinner/loading-spinner.component';
 import { ErrorMessageComponent } from '../../../../shared/components/error-message/error-message.component';
+import { AnswerKeyCounterComponent } from '../../../../shared/components/answer-key-counter/answer-key-counter.component';
 
 @Component({
   selector: 'app-practice-test-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule, LoadingSpinnerComponent, ErrorMessageComponent],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, LoadingSpinnerComponent, ErrorMessageComponent, AnswerKeyCounterComponent],
   template: `
     <div class="max-w-2xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
       <div class="mb-6">
@@ -117,18 +118,22 @@ import { ErrorMessageComponent } from '../../../../shared/components/error-messa
             </div>
 
             <div>
-              <label for="answer_key" class="block text-sm font-medium text-gray-700">Cevap Anahtarı *</label>
+              <label for="answer_key" class="block text-sm font-medium text-gray-700">Doğru Cevaplar *</label>
               <textarea id="answer_key" 
                         formControlName="answer_key"
                         rows="4"
                         class="mt-1 block w-full px-4 py-3 rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm font-mono"
-                        placeholder="ABCDABCDABCD... (Her soru için A, B, C, D, E veya _)"></textarea>
+                        placeholder="ABCDABCDABCD... (Her soru için A, B, C, D, E harflerinden biri)"></textarea>
               <div class="mt-1 text-sm text-gray-500">
-                Her soru için A, B, C, D, E harflerinden biri veya boş için _ kullanın. Örnek: ABCD_BCD...
+                Her soru için A, B, C, D, E harflerinden biri kullanın. Soru sayısı kadar cevap girmelisiniz. Örnek: 20 soru için ABCDABCDABCDABCDABCD
               </div>
+              <app-answer-key-counter 
+                [questionCount]="form.get('question_count')?.value || 0"
+                [answerKey]="form.get('answer_key')?.value || ''">
+              </app-answer-key-counter>
               <div *ngIf="form.get('answer_key')?.invalid && form.get('answer_key')?.touched" 
                    class="mt-1 text-sm text-red-600">
-                Cevap anahtarı gereklidir
+                Doğru cevaplar gereklidir
               </div>
             </div>
 
