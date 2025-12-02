@@ -7,6 +7,7 @@ import {
   Subject,
   TestBook,
   PracticeTest,
+  PracticeTestsGrouped,
   CreateExamTypeRequest,
   UpdateExamTypeRequest,
   CreateLessonRequest,
@@ -140,6 +141,10 @@ export class AdminService {
   listPracticeTests(testBookId?: string): Observable<ApiResponse<PracticeTest[]>> {
     const params = testBookId ? { test_book_id: testBookId } : undefined;
     return this.api.get<PracticeTest[]>('/practice-tests', params);
+  }
+
+  getPracticeTestsGroupedBySubject(testBookId: string): Observable<ApiResponse<PracticeTestsGrouped>> {
+    return this.api.get<PracticeTestsGrouped>(`/test-books/${testBookId}/practice-tests-grouped`);
   }
 
   // User Management

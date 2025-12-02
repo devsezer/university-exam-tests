@@ -11,7 +11,7 @@ import { ErrorMessageComponent } from '../../../../shared/components/error-messa
   standalone: true,
   imports: [CommonModule, RouterModule, LoadingSpinnerComponent, ErrorMessageComponent],
   template: `
-    <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+    <div class="py-6 px-4 sm:px-6 lg:px-8 w-full">
       <div class="mb-6">
         <h1 class="text-3xl font-bold text-gray-900">Roller</h1>
         <p class="mt-2 text-sm text-gray-600">Sistem rollerini görüntüleyin</p>
