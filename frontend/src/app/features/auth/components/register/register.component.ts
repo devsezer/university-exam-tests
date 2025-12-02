@@ -26,7 +26,7 @@ import { LoadingSpinnerComponent } from '../../../../shared/components/loading-s
           </div>
           <form class="space-y-6" [formGroup]="registerForm" (ngSubmit)="onSubmit()">
             <app-error-message [message]="errorMessage()"></app-error-message>
-            
+
             <div class="space-y-4">
               <div>
                 <label for="username" class="block text-sm font-medium text-gray-700 mb-2">Kullanıcı Adı</label>
@@ -34,7 +34,7 @@ import { LoadingSpinnerComponent } from '../../../../shared/components/loading-s
                        formControlName="username"
                        class="input-focus appearance-none relative block w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl placeholder-gray-400 text-gray-900 focus:bg-white focus:border-primary-500 focus:ring-4 focus:ring-primary-500/20 transition-all duration-300 sm:text-sm"
                        placeholder="Kullanıcı adınız">
-                <div *ngIf="registerForm.get('username')?.invalid && registerForm.get('username')?.touched" 
+                <div *ngIf="registerForm.get('username')?.invalid && registerForm.get('username')?.touched"
                      class="text-danger-600 text-sm mt-2 animate-slide-down flex items-center gap-1">
                   <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                     <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
@@ -42,14 +42,14 @@ import { LoadingSpinnerComponent } from '../../../../shared/components/loading-s
                   Kullanıcı adı 3-50 karakter arasında olmalıdır
                 </div>
               </div>
-              
+
               <div>
                 <label for="email" class="block text-sm font-medium text-gray-700 mb-2">E-posta</label>
                 <input id="email" name="email" type="email" autocomplete="email" required
                        formControlName="email"
                        class="input-focus appearance-none relative block w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl placeholder-gray-400 text-gray-900 focus:bg-white focus:border-primary-500 focus:ring-4 focus:ring-primary-500/20 transition-all duration-300 sm:text-sm"
                        placeholder="E-posta adresiniz">
-                <div *ngIf="registerForm.get('email')?.invalid && registerForm.get('email')?.touched" 
+                <div *ngIf="registerForm.get('email')?.invalid && registerForm.get('email')?.touched"
                      class="text-danger-600 text-sm mt-2 animate-slide-down flex items-center gap-1">
                   <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                     <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
@@ -57,14 +57,14 @@ import { LoadingSpinnerComponent } from '../../../../shared/components/loading-s
                   Geçerli bir e-posta adresi giriniz
                 </div>
               </div>
-              
+
               <div>
                 <label for="password" class="block text-sm font-medium text-gray-700 mb-2">Şifre</label>
                 <input id="password" name="password" type="password" autocomplete="new-password" required
                        formControlName="password"
                        class="input-focus appearance-none relative block w-full px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-xl placeholder-gray-400 text-gray-900 focus:bg-white focus:border-primary-500 focus:ring-4 focus:ring-primary-500/20 transition-all duration-300 sm:text-sm"
                        placeholder="Şifre (en az 8 karakter)">
-                <div *ngIf="registerForm.get('password')?.invalid && registerForm.get('password')?.touched" 
+                <div *ngIf="registerForm.get('password')?.invalid && registerForm.get('password')?.touched"
                      class="text-danger-600 text-sm mt-2 animate-slide-down flex items-center gap-1">
                   <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                     <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
@@ -75,7 +75,7 @@ import { LoadingSpinnerComponent } from '../../../../shared/components/loading-s
             </div>
 
             <div>
-              <button type="submit" 
+              <button type="submit"
                       [disabled]="isLoading() || registerForm.invalid"
                       class="ripple btn-gradient w-full flex justify-center py-3 px-4 text-base font-semibold rounded-xl text-white shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:transform-none">
                 <span *ngIf="!isLoading()" class="flex items-center gap-2">
@@ -137,7 +137,9 @@ export class RegisterComponent {
         .subscribe({
           next: (response) => {
             if (response.success) {
-              // Login will be handled automatically by the service
+              // Login is now completed as part of the register observable chain
+              // Auth state is updated, so we can safely check isAdmin()
+              this.isLoading.set(false);
               // Admin kontrolü yap ve yönlendir
               // Signal-based state kullanıldığından doğrudan kontrol edebiliriz
               if (this.authService.isAdmin()) {

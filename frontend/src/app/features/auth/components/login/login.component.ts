@@ -52,6 +52,8 @@ export class LoginComponent {
         .subscribe({
           next: (response) => {
             if (response.success) {
+              // Loading'i false yap (navigation'dan önce)
+              this.isLoading.set(false);
               // Admin kontrolü yap ve yönlendir
               // Signal-based state kullanıldığından doğrudan kontrol edebiliriz
               if (this.authService.isAdmin()) {

@@ -1,6 +1,6 @@
 import { Injectable, signal, computed, effect } from '@angular/core';
 import { Router } from '@angular/router';
-import { Observable, tap, catchError, throwError, firstValueFrom } from 'rxjs';
+import { Observable, tap, catchError, throwError, firstValueFrom, switchMap, of } from 'rxjs';
 import { ApiService } from './api.service';
 import { TokenStorageService } from './token-storage.service';
 import {
@@ -97,14 +97,14 @@ export class AuthService {
 
   register(data: RegisterRequest): Observable<ApiResponse<AuthResponse['data']>> {
     return this.api.post<AuthResponse['data']>('/auth/register', data).pipe(
-      tap(response => {
-        if (response.success && response.data) {
+      switchMap(registerResponse => {
+        if (registerResponse.success && registerResponse.data) {
           // After registration, automatically login
-          // Note: Subscription should be handled by the caller component
-          // Using firstValueFrom to avoid subscription management in service
-          firstValueFrom(this.login({ email: data.email, password: data.password })).catch(() => {
-            // Error handling is done in login method
-          });
+          // Chain login into the observable so component waits for it to complete
+          return this.login({ email: data.email, password: data.password });
+        } else {
+          // Registration failed, return the response as-is
+          return of(registerResponse);
         }
       }),
       catchError(error => {
