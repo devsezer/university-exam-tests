@@ -1,6 +1,6 @@
 import { Injectable, signal, computed, effect } from '@angular/core';
 import { Router } from '@angular/router';
-import { Observable, tap, catchError, throwError } from 'rxjs';
+import { Observable, tap, catchError, throwError, firstValueFrom } from 'rxjs';
 import { ApiService } from './api.service';
 import { TokenStorageService } from './token-storage.service';
 import {
@@ -32,7 +32,6 @@ export class AuthService {
 
   readonly isAdmin = computed(() => {
     const user = this.user();
-    console.log(user);
     // Backend'den roles string array olarak geliyor: ["admin", "user"]
     return user?.roles?.some(r => r === 'admin') ?? false;
   });
@@ -52,11 +51,15 @@ export class AuthService {
     this.initializeAuthState();
 
     // Effect to handle authentication state changes
+    // Note: Service is singleton, so subscriptions don't need cleanup
     effect(() => {
       const state = this.authState();
       if (!state.isAuthenticated && this.tokenStorage.hasAccessToken()) {
         // Token exists but user is not authenticated, try to get current user
-        this.getCurrentUser().subscribe();
+        // Using firstValueFrom to avoid subscription management in service
+        firstValueFrom(this.getCurrentUser()).catch(() => {
+          // Error handling is done in getCurrentUser
+        });
       }
     });
   }
@@ -64,11 +67,10 @@ export class AuthService {
   private initializeAuthState(): void {
     if (this.tokenStorage.hasAccessToken()) {
       // Token exists, try to get current user
-      this.getCurrentUser().subscribe({
-        error: () => {
-          // If getting user fails, clear tokens
-          this.clearAuth();
-        }
+      // Using firstValueFrom to avoid subscription management in service
+      firstValueFrom(this.getCurrentUser()).catch(() => {
+        // If getting user fails, clear tokens
+        this.clearAuth();
       });
     }
   }
@@ -98,7 +100,11 @@ export class AuthService {
       tap(response => {
         if (response.success && response.data) {
           // After registration, automatically login
-          this.login({ email: data.email, password: data.password }).subscribe();
+          // Note: Subscription should be handled by the caller component
+          // Using firstValueFrom to avoid subscription management in service
+          firstValueFrom(this.login({ email: data.email, password: data.password })).catch(() => {
+            // Error handling is done in login method
+          });
         }
       }),
       catchError(error => {
@@ -110,7 +116,11 @@ export class AuthService {
   logout(): void {
     const refreshToken = this.tokenStorage.getRefreshToken();
     if (refreshToken) {
-      this.api.post('/auth/logout', { refresh_token: refreshToken }).subscribe();
+      // Fire and forget logout request
+      // Service is singleton, so subscription cleanup is not needed
+      firstValueFrom(this.api.post('/auth/logout', { refresh_token: refreshToken })).catch(() => {
+        // Ignore errors for logout request
+      });
     }
     this.clearAuth();
     this.router.navigate(['/auth/login']);

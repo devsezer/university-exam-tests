@@ -1,6 +1,7 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, ChangeDetectionStrategy, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { forkJoin } from 'rxjs';
 import { ResultsService } from '../../services/results.service';
 import { TestService } from '../../../tests/services/test.service';
@@ -12,6 +13,7 @@ import { ErrorMessageComponent } from '../../../../shared/components/error-messa
   selector: 'app-results-list',
   standalone: true,
   imports: [CommonModule, RouterModule, LoadingSpinnerComponent, ErrorMessageComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
       <div class="mb-6">
@@ -97,6 +99,7 @@ export class ResultsListComponent implements OnInit {
   subjects = signal<Map<string, Subject>>(new Map());
   isLoading = signal(true);
   errorMessage = signal<string | null>(null);
+  private destroyRef = inject(DestroyRef);
 
   constructor(
     private resultsService: ResultsService,
@@ -110,7 +113,9 @@ export class ResultsListComponent implements OnInit {
   loadResults(): void {
     this.isLoading.set(true);
     this.errorMessage.set(null);
-    this.resultsService.getMyResults().subscribe({
+    this.resultsService.getMyResults()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
       next: (response) => {
         if (response.success && response.data) {
           const results = Array.isArray(response.data) ? response.data : [];
@@ -145,7 +150,9 @@ export class ResultsListComponent implements OnInit {
       this.testService.getPracticeTest(id)
     );
 
-    forkJoin(practiceTestRequests).subscribe({
+    forkJoin(practiceTestRequests)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
       next: (responses) => {
         const practiceTestsMap = new Map<string, PracticeTest>();
         const subjectIds = new Set<string>();
@@ -176,7 +183,9 @@ export class ResultsListComponent implements OnInit {
 
   loadSubjects(subjectIds: string[]): void {
     // Load subjects - get all subjects and filter
-    this.testService.getSubjects(undefined, undefined).subscribe({
+    this.testService.getSubjects(undefined, undefined)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
       next: (response) => {
         if (response.success && response.data) {
           const subjectsMap = new Map<string, Subject>();

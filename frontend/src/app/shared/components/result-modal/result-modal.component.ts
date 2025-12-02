@@ -1,5 +1,6 @@
-import { Component, OnInit, OnChanges, SimpleChanges, Input, Output, EventEmitter, signal } from '@angular/core';
+import { Component, OnInit, OnChanges, SimpleChanges, Input, Output, EventEmitter, signal, ChangeDetectionStrategy, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ResultsService } from '../../../features/results/services/results.service';
 import { TestService } from '../../../features/tests/services/test.service';
 import { TestResult, PracticeTest } from '../../../models/test.models';
@@ -10,6 +11,7 @@ import { ErrorMessageComponent } from '../error-message/error-message.component'
   selector: 'app-result-modal',
   standalone: true,
   imports: [CommonModule, LoadingSpinnerComponent, ErrorMessageComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div *ngIf="isOpen()" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
       <!-- Backdrop -->
@@ -114,6 +116,7 @@ export class ResultModalComponent implements OnInit, OnChanges {
   isLoading = signal(false);
   errorMessage = signal<string | null>(null);
   isOpen = signal(false);
+  private destroyRef = inject(DestroyRef);
 
   constructor(
     private resultsService: ResultsService,
@@ -154,7 +157,9 @@ export class ResultModalComponent implements OnInit, OnChanges {
 
   loadResult(id: string): void {
     this.isLoading.set(true);
-    this.resultsService.getResult(id).subscribe({
+    this.resultsService.getResult(id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
       next: (response) => {
         if (response.success && response.data) {
           this.result.set(response.data);
@@ -173,7 +178,9 @@ export class ResultModalComponent implements OnInit, OnChanges {
   }
 
   loadPracticeTest(id: string): void {
-    this.testService.getPracticeTest(id).subscribe({
+    this.testService.getPracticeTest(id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
       next: (response) => {
         this.isLoading.set(false);
         if (response.success && response.data) {

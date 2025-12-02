@@ -1,7 +1,8 @@
-import { Component, OnInit, signal, computed } from '@angular/core';
+import { Component, OnInit, signal, computed, ChangeDetectionStrategy, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { TestService } from '../../services/test.service';
 import { PracticeTest, SolveTestRequest } from '../../../../models/test.models';
 import { LoadingSpinnerComponent } from '../../../../shared/components/loading-spinner/loading-spinner.component';
@@ -11,6 +12,7 @@ import { ErrorMessageComponent } from '../../../../shared/components/error-messa
   selector: 'app-test-solver',
   standalone: true,
   imports: [CommonModule, FormsModule, LoadingSpinnerComponent, ErrorMessageComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="max-w-6xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
       <div *ngIf="isLoading(); else testContent">
@@ -98,6 +100,7 @@ export class TestSolverComponent implements OnInit {
   isLoading = signal(true);
   isSubmitting = signal(false);
   errorMessage = signal<string | null>(null);
+  private destroyRef = inject(DestroyRef);
 
   answeredCount = computed(() => {
     return this.answers().filter(a => a && a.trim() !== '').length;
@@ -132,7 +135,9 @@ export class TestSolverComponent implements OnInit {
 
   loadTest(testId: string): void {
     this.isLoading.set(true);
-    this.testService.getPracticeTest(testId).subscribe({
+    this.testService.getPracticeTest(testId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
       next: (response) => {
         this.isLoading.set(false);
         if (response.success && response.data) {
@@ -170,7 +175,9 @@ export class TestSolverComponent implements OnInit {
     const request: SolveTestRequest = { user_answers: userAnswers };
 
     this.isSubmitting.set(true);
-    this.testService.solveTest(this.practiceTest()!.id, request).subscribe({
+    this.testService.solveTest(this.practiceTest()!.id, request)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
       next: (response) => {
         this.isSubmitting.set(false);
         if (response.success && response.data) {

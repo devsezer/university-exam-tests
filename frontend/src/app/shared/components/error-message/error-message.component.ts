@@ -1,10 +1,11 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-error-message',
   standalone: true,
   imports: [CommonModule],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div *ngIf="message" 
          class="bg-gradient-to-r from-danger-50 to-rose-50 border-2 border-danger-300 text-danger-700 px-4 py-3 rounded-xl relative animate-slide-down shadow-lg backdrop-blur-sm" 

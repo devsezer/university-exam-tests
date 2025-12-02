@@ -1,8 +1,10 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, ChangeDetectionStrategy, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuthService } from '../../../../core/services/auth.service';
+import { ErrorHandlerService } from '../../../../core/services/error-handler.service';
 import { RegisterRequest } from '../../../../models/auth.models';
 import { ErrorMessageComponent } from '../../../../shared/components/error-message/error-message.component';
 import { LoadingSpinnerComponent } from '../../../../shared/components/loading-spinner/loading-spinner.component';
@@ -11,6 +13,7 @@ import { LoadingSpinnerComponent } from '../../../../shared/components/loading-s
   selector: 'app-register',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, RouterModule, ErrorMessageComponent, LoadingSpinnerComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="fixed inset-0 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 animate-fade-in bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 overflow-y-auto">
       <div class="max-w-md w-full space-y-8 animate-scale-in my-auto">
@@ -108,11 +111,13 @@ export class RegisterComponent {
   registerForm: FormGroup;
   isLoading = signal(false);
   errorMessage = signal<string | null>(null);
+  private destroyRef = inject(DestroyRef);
 
   constructor(
     private fb: FormBuilder,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private errorHandler: ErrorHandlerService
   ) {
     this.registerForm = this.fb.group({
       username: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(50)]],
@@ -127,28 +132,29 @@ export class RegisterComponent {
       this.errorMessage.set(null);
 
       const data: RegisterRequest = this.registerForm.value;
-      this.authService.register(data).subscribe({
-        next: (response) => {
-          if (response.success) {
-            // Login will be handled automatically by the service
-            // Admin kontrolü yap ve yönlendir
-            setTimeout(() => {
+      this.authService.register(data)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: (response) => {
+            if (response.success) {
+              // Login will be handled automatically by the service
+              // Admin kontrolü yap ve yönlendir
+              // Signal-based state kullanıldığından doğrudan kontrol edebiliriz
               if (this.authService.isAdmin()) {
                 this.router.navigate(['/admin']);
               } else {
                 this.router.navigate(['/dashboard']);
               }
-            }, 100);
-          } else {
+            } else {
+              this.isLoading.set(false);
+              this.errorMessage.set(this.errorHandler.getDefaultErrorMessage('register'));
+            }
+          },
+          error: (error) => {
             this.isLoading.set(false);
-            this.errorMessage.set('Kayıt başarısız. Lütfen tekrar deneyin.');
+            this.errorMessage.set(this.errorHandler.extractErrorMessage(error) || this.errorHandler.getDefaultErrorMessage('register'));
           }
-        },
-        error: (error) => {
-          this.isLoading.set(false);
-          this.errorMessage.set(error.error?.error?.message || 'Kayıt başarısız. Lütfen tekrar deneyin.');
-        }
-      });
+        });
     }
   }
 }

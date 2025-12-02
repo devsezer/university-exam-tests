@@ -1,7 +1,8 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, ChangeDetectionStrategy, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AdminService } from '../../services/admin.service';
 import { ExamType, CreateExamTypeRequest, UpdateExamTypeRequest } from '../../../../models/test.models';
 import { LoadingSpinnerComponent } from '../../../../shared/components/loading-spinner/loading-spinner.component';
@@ -11,6 +12,7 @@ import { ErrorMessageComponent } from '../../../../shared/components/error-messa
   selector: 'app-exam-type-form',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, RouterModule, LoadingSpinnerComponent, ErrorMessageComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="max-w-2xl py-6 px-4 sm:px-6 lg:px-8 w-full">
       <div class="mb-6">
@@ -81,6 +83,7 @@ export class ExamTypeFormComponent implements OnInit {
   isEditMode = signal(false);
   errorMessage = signal<string | null>(null);
   examTypeId: string | null = null;
+  private destroyRef = inject(DestroyRef);
 
   constructor(
     private fb: FormBuilder,
@@ -107,7 +110,9 @@ export class ExamTypeFormComponent implements OnInit {
 
   loadExamType(id: string): void {
     this.isLoading.set(true);
-    this.adminService.getExamType(id).subscribe({
+    this.adminService.getExamType(id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
       next: (response) => {
         this.isLoading.set(false);
         if (response.success && response.data) {
@@ -138,7 +143,9 @@ export class ExamTypeFormComponent implements OnInit {
           name: formValue.name,
           description: formValue.description || undefined
         };
-        this.adminService.updateExamType(this.examTypeId, request).subscribe({
+        this.adminService.updateExamType(this.examTypeId, request)
+          .pipe(takeUntilDestroyed(this.destroyRef))
+          .subscribe({
           next: () => {
             this.router.navigate(['/admin/exam-types']);
           },
@@ -152,7 +159,9 @@ export class ExamTypeFormComponent implements OnInit {
           name: formValue.name,
           description: formValue.description || undefined
         };
-        this.adminService.createExamType(request).subscribe({
+        this.adminService.createExamType(request)
+          .pipe(takeUntilDestroyed(this.destroyRef))
+          .subscribe({
           next: () => {
             this.router.navigate(['/admin/exam-types']);
           },

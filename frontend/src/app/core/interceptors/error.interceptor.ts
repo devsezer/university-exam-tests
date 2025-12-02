@@ -10,12 +10,9 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(req).pipe(
     catchError((error: HttpErrorResponse) => {
-      if (error.status === 401) {
-        // Unauthorized - logout and redirect to login
-        authService.logout();
-        router.navigate(['/auth/login']);
-      }
-
+      // 401 handling is done in authInterceptor to avoid double logout/redirect
+      // This interceptor handles other error cases
+      
       // You can add more error handling logic here
       // For example, show toast notifications, etc.
 

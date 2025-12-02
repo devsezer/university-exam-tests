@@ -1,6 +1,7 @@
-import { Component, OnInit, signal, Input, Output, EventEmitter, computed } from '@angular/core';
+import { Component, OnInit, signal, Input, Output, EventEmitter, computed, ChangeDetectionStrategy, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, FormArray, ReactiveFormsModule, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AdminService } from '../../services/admin.service';
 import { ExamType, Lesson, Subject, CreateTestBookRequest } from '../../../../models/test.models';
 import { LoadingSpinnerComponent } from '../../../../shared/components/loading-spinner/loading-spinner.component';
@@ -11,6 +12,7 @@ import { CustomDropdownComponent, DropdownOption } from '../../../../shared/comp
   selector: 'app-test-book-create-modal',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, LoadingSpinnerComponent, ErrorMessageComponent, CustomDropdownComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div *ngIf="isOpen()" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
       <!-- Backdrop -->
@@ -168,6 +170,7 @@ export class TestBookCreateModalComponent implements OnInit {
   lessons = signal<Lesson[]>([]);
   filteredSubjects = signal<Subject[]>([]);
   isLoadingSubjects = signal(false);
+  private destroyRef = inject(DestroyRef);
 
   examTypeOptions = computed<DropdownOption[]>(() => {
     return this.examTypes().map(examType => ({
@@ -224,7 +227,9 @@ export class TestBookCreateModalComponent implements OnInit {
   }
 
   loadExamTypes(): void {
-    this.adminService.listExamTypes().subscribe({
+    this.adminService.listExamTypes()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
       next: (response) => {
         if (response.success && response.data) {
           this.examTypes.set(response.data);
@@ -237,7 +242,9 @@ export class TestBookCreateModalComponent implements OnInit {
   }
 
   loadLessons(): void {
-    this.adminService.listLessons().subscribe({
+    this.adminService.listLessons()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
       next: (response) => {
         if (response.success && response.data) {
           this.lessons.set(response.data);
@@ -251,7 +258,9 @@ export class TestBookCreateModalComponent implements OnInit {
 
   loadSubjects(examTypeId: string, lessonId: string): void {
     this.isLoadingSubjects.set(true);
-    this.adminService.listSubjects(examTypeId, lessonId).subscribe({
+    this.adminService.listSubjects(examTypeId, lessonId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
       next: (response) => {
         this.isLoadingSubjects.set(false);
         if (response.success && response.data) {
@@ -301,9 +310,10 @@ export class TestBookCreateModalComponent implements OnInit {
     return subjectIdsArray.value.includes(subjectId);
   }
 
-  onSubjectToggle(subjectId: string, event: any): void {
+  onSubjectToggle(subjectId: string, event: Event): void {
     const subjectIdsArray = this.form.get('subject_ids') as FormArray;
-    if (event.target.checked) {
+    const target = event.target as HTMLInputElement;
+    if (target.checked) {
       subjectIdsArray.push(this.fb.control(subjectId));
     } else {
       const index = subjectIdsArray.value.indexOf(subjectId);
@@ -334,7 +344,9 @@ export class TestBookCreateModalComponent implements OnInit {
         published_year: formValue.published_year
       };
 
-      this.adminService.createTestBook(request).subscribe({
+      this.adminService.createTestBook(request)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
         next: (response) => {
           this.isSubmitting.set(false);
           if (response.success && response.data) {

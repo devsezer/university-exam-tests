@@ -1,7 +1,8 @@
-import { Component, signal, computed } from '@angular/core';
+import { Component, signal, computed, ChangeDetectionStrategy, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { TestService } from '../../services/test.service';
 import { ExamType, Lesson, Subject, TestBook, PracticeTest, PracticeTestsGrouped } from '../../../../models/test.models';
 import { LoadingSpinnerComponent } from '../../../../shared/components/loading-spinner/loading-spinner.component';
@@ -12,6 +13,7 @@ import { CustomDropdownComponent, DropdownOption } from '../../../../shared/comp
   selector: 'app-test-selector',
   standalone: true,
   imports: [CommonModule, FormsModule, LoadingSpinnerComponent, ErrorMessageComponent, CustomDropdownComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="max-w-6xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
       <h1 class="text-3xl font-bold text-gray-900 mb-8">Test Seç</h1>
@@ -205,6 +207,8 @@ export class TestSelectorComponent {
     }));
   });
 
+  private destroyRef = inject(DestroyRef);
+
   constructor(
     private testService: TestService,
     private router: Router
@@ -213,7 +217,9 @@ export class TestSelectorComponent {
   }
 
   loadExamTypes(): void {
-    this.testService.getExamTypes().subscribe({
+    this.testService.getExamTypes()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
       next: (response) => {
         if (response.success && response.data) {
           this.examTypes.set(response.data);
@@ -235,7 +241,9 @@ export class TestSelectorComponent {
 
     if (this.selectedExamTypeId) {
       this.isLoadingLessons.set(true);
-      this.testService.getLessons().subscribe({
+      this.testService.getLessons()
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
         next: (response) => {
           this.isLoadingLessons.set(false);
           if (response.success && response.data) {
@@ -257,7 +265,9 @@ export class TestSelectorComponent {
 
     if (this.selectedLessonId && this.selectedExamTypeId) {
       // Load subjects for this lesson and exam type (for subject names later)
-      this.testService.getSubjects(this.selectedExamTypeId, this.selectedLessonId).subscribe({
+      this.testService.getSubjects(this.selectedExamTypeId, this.selectedLessonId)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
         next: (response) => {
           if (response.success && response.data) {
             const subjectsMap = new Map<string, Subject>();
@@ -274,7 +284,9 @@ export class TestSelectorComponent {
 
       // Load test books and move to step 2
       this.isLoadingTestBooks.set(true);
-      this.testService.getTestBooks(this.selectedExamTypeId, this.selectedLessonId).subscribe({
+      this.testService.getTestBooks(this.selectedExamTypeId, this.selectedLessonId)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
         next: (response) => {
           this.isLoadingTestBooks.set(false);
           if (response.success && response.data) {
@@ -296,7 +308,9 @@ export class TestSelectorComponent {
     this.currentStep.set(3);
 
     this.isLoadingPracticeTests.set(true);
-    this.testService.getPracticeTestsGrouped(bookId).subscribe({
+    this.testService.getPracticeTestsGrouped(bookId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
       next: (response) => {
         this.isLoadingPracticeTests.set(false);
         if (response.success && response.data) {

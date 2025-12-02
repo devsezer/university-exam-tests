@@ -1,7 +1,8 @@
-import { Component, OnInit, signal, computed } from '@angular/core';
+import { Component, OnInit, signal, computed, ChangeDetectionStrategy, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { TestService } from '../../../tests/services/test.service';
 import { TestBookDetail, PracticeTestWithStatus, Subject } from '../../../../models/test.models';
 import { LoadingSpinnerComponent } from '../../../../shared/components/loading-spinner/loading-spinner.component';
@@ -13,6 +14,7 @@ import { CustomDropdownComponent, DropdownOption } from '../../../../shared/comp
   selector: 'app-book-detail',
   standalone: true,
   imports: [CommonModule, RouterModule, FormsModule, LoadingSpinnerComponent, ErrorMessageComponent, ResultModalComponent, CustomDropdownComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="min-h-screen bg-gradient-to-br from-primary-50 via-purple-50 to-secondary-50">
       <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
@@ -311,6 +313,8 @@ export class BookDetailComponent implements OnInit {
     return options;
   });
 
+  private destroyRef = inject(DestroyRef);
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
@@ -337,7 +341,9 @@ export class BookDetailComponent implements OnInit {
     // In the future, we can add a dedicated endpoint
     
     // First, get test books with stats to get the book info
-    this.testService.getTestBooksWithStats().subscribe({
+    this.testService.getTestBooksWithStats()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
       next: (response) => {
         if (response.success && response.data) {
           const book = response.data.find(b => b.id === bookId);
@@ -361,7 +367,9 @@ export class BookDetailComponent implements OnInit {
   }
 
   loadTestsWithStatus(bookId: string, book: any): void {
-    this.testService.getPracticeTestsWithStatus(bookId).subscribe({
+    this.testService.getPracticeTestsWithStatus(bookId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
       next: (response) => {
         this.isLoading.set(false);
         if (response.success && response.data) {
@@ -388,7 +396,9 @@ export class BookDetailComponent implements OnInit {
 
   loadRelatedData(): void {
     // Load exam types and lessons for display
-    this.testService.getExamTypes().subscribe({
+    this.testService.getExamTypes()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
       next: (response) => {
         if (response.success && response.data) {
           this.examTypes.set(response.data);
@@ -396,7 +406,9 @@ export class BookDetailComponent implements OnInit {
       }
     });
 
-    this.testService.getLessons().subscribe({
+    this.testService.getLessons()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
       next: (response) => {
         if (response.success && response.data) {
           this.lessons.set(response.data);
@@ -405,7 +417,9 @@ export class BookDetailComponent implements OnInit {
     });
 
     // Load subjects for filter
-    this.testService.getSubjects().subscribe({
+    this.testService.getSubjects()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
       next: (response) => {
         if (response.success && response.data) {
           this.subjects.set(response.data);

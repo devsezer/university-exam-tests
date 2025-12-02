@@ -1,7 +1,8 @@
-import { Component, OnInit, signal, computed } from '@angular/core';
+import { Component, OnInit, signal, computed, ChangeDetectionStrategy, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, FormArray, ReactiveFormsModule, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AdminService } from '../../services/admin.service';
 import { TestBook, ExamType, Lesson, Subject, CreateTestBookRequest, UpdateTestBookRequest } from '../../../../models/test.models';
 import { LoadingSpinnerComponent } from '../../../../shared/components/loading-spinner/loading-spinner.component';
@@ -12,6 +13,7 @@ import { CustomDropdownComponent, DropdownOption } from '../../../../shared/comp
   selector: 'app-test-book-form',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, RouterModule, LoadingSpinnerComponent, ErrorMessageComponent, CustomDropdownComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="max-w-2xl py-6 px-4 sm:px-6 lg:px-8 w-full">
       <div class="mb-6">
@@ -163,6 +165,8 @@ export class TestBookFormComponent implements OnInit {
     }));
   });
 
+  private destroyRef = inject(DestroyRef);
+
   constructor(
     private fb: FormBuilder,
     private route: ActivatedRoute,
@@ -192,7 +196,9 @@ export class TestBookFormComponent implements OnInit {
   }
 
   loadExamTypes(): void {
-    this.adminService.listExamTypes().subscribe({
+    this.adminService.listExamTypes()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
       next: (response) => {
         if (response.success && response.data) {
           this.examTypes.set(response.data);
@@ -205,7 +211,9 @@ export class TestBookFormComponent implements OnInit {
   }
 
   loadLessons(): void {
-    this.adminService.listLessons().subscribe({
+    this.adminService.listLessons()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
       next: (response) => {
         if (response.success && response.data) {
           this.lessons.set(response.data);
@@ -219,7 +227,9 @@ export class TestBookFormComponent implements OnInit {
 
   loadSubjectsForLessonAndExamType(lessonId: string, examTypeId: string, callback?: () => void): void {
     this.isLoadingSubjects.set(true);
-    this.adminService.listSubjects(examTypeId, lessonId).subscribe({
+    this.adminService.listSubjects(examTypeId, lessonId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
       next: (response) => {
         this.isLoadingSubjects.set(false);
         if (response.success && response.data) {
@@ -304,7 +314,9 @@ export class TestBookFormComponent implements OnInit {
 
   loadTestBook(id: string): void {
     this.isLoading.set(true);
-    this.adminService.getTestBook(id).subscribe({
+    this.adminService.getTestBook(id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
       next: (response) => {
         if (response.success && response.data) {
           const testBook = response.data;
@@ -357,7 +369,9 @@ export class TestBookFormComponent implements OnInit {
           subject_ids: formValue.subject_ids || [],
           published_year: formValue.published_year
         };
-        this.adminService.updateTestBook(this.testBookId, request).subscribe({
+        this.adminService.updateTestBook(this.testBookId, request)
+          .pipe(takeUntilDestroyed(this.destroyRef))
+          .subscribe({
           next: () => {
             this.router.navigate(['/admin/test-books']);
           },
@@ -374,7 +388,9 @@ export class TestBookFormComponent implements OnInit {
           subject_ids: formValue.subject_ids || [],
           published_year: formValue.published_year
         };
-        this.adminService.createTestBook(request).subscribe({
+        this.adminService.createTestBook(request)
+          .pipe(takeUntilDestroyed(this.destroyRef))
+          .subscribe({
           next: () => {
             this.router.navigate(['/admin/test-books']);
           },

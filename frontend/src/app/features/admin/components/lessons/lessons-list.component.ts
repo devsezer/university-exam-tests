@@ -1,6 +1,7 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, ChangeDetectionStrategy, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AdminService } from '../../services/admin.service';
 import { Lesson } from '../../../../models/test.models';
 import { LoadingSpinnerComponent } from '../../../../shared/components/loading-spinner/loading-spinner.component';
@@ -11,6 +12,7 @@ import { DeleteConfirmationComponent } from '../../../../shared/components/delet
   selector: 'app-lessons-list',
   standalone: true,
   imports: [CommonModule, RouterModule, LoadingSpinnerComponent, ErrorMessageComponent, DeleteConfirmationComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="py-6 px-4 sm:px-6 lg:px-8 w-full">
       <div class="mb-6 flex justify-between items-center">
@@ -99,6 +101,7 @@ export class LessonsListComponent implements OnInit {
   showDeleteDialog = signal(false);
   lessonToDelete = signal<Lesson | null>(null);
   deleteMessage = signal('');
+  private destroyRef = inject(DestroyRef);
 
   constructor(private adminService: AdminService) {}
 
@@ -108,7 +111,9 @@ export class LessonsListComponent implements OnInit {
 
   loadLessons(): void {
     this.isLoading.set(true);
-    this.adminService.listLessons().subscribe({
+    this.adminService.listLessons()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
       next: (response) => {
         this.isLoading.set(false);
         if (response.success && response.data) {
@@ -139,7 +144,9 @@ export class LessonsListComponent implements OnInit {
     const lesson = this.lessonToDelete();
     if (!lesson) return;
 
-    this.adminService.deleteLesson(lesson.id).subscribe({
+    this.adminService.deleteLesson(lesson.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
       next: () => {
         this.loadLessons();
         this.showDeleteDialog.set(false);

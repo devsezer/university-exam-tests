@@ -1,7 +1,8 @@
-import { Component, OnInit, signal, effect, computed } from '@angular/core';
+import { Component, OnInit, signal, effect, computed, ChangeDetectionStrategy, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AdminService } from '../../services/admin.service';
 import { Subject, ExamType, Lesson, CreateSubjectRequest, UpdateSubjectRequest } from '../../../../models/test.models';
 import { LoadingSpinnerComponent } from '../../../../shared/components/loading-spinner/loading-spinner.component';
@@ -12,6 +13,7 @@ import { CustomDropdownComponent, DropdownOption } from '../../../../shared/comp
   selector: 'app-subject-form',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, RouterModule, LoadingSpinnerComponent, ErrorMessageComponent, CustomDropdownComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="max-w-2xl py-6 px-4 sm:px-6 lg:px-8 w-full">
       <div class="mb-6">
@@ -118,6 +120,8 @@ export class SubjectFormComponent implements OnInit {
     }));
   });
 
+  private destroyRef = inject(DestroyRef);
+
   constructor(
     private fb: FormBuilder,
     private route: ActivatedRoute,
@@ -145,7 +149,9 @@ export class SubjectFormComponent implements OnInit {
   }
 
   loadLessons(): void {
-    this.adminService.listLessons().subscribe({
+    this.adminService.listLessons()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
       next: (response) => {
         if (response.success && response.data) {
           this.lessons.set(response.data);
@@ -158,7 +164,9 @@ export class SubjectFormComponent implements OnInit {
   }
 
   loadExamTypes(): void {
-    this.adminService.listExamTypes().subscribe({
+    this.adminService.listExamTypes()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
       next: (response) => {
         if (response.success && response.data) {
           this.examTypes.set(response.data);
@@ -172,7 +180,9 @@ export class SubjectFormComponent implements OnInit {
 
   loadSubject(id: string): void {
     this.isLoading.set(true);
-    this.adminService.getSubject(id).subscribe({
+    this.adminService.getSubject(id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
       next: (response) => {
         this.isLoading.set(false);
         if (response.success && response.data) {
@@ -205,7 +215,9 @@ export class SubjectFormComponent implements OnInit {
           lesson_id: formValue.lesson_id,
           exam_type_id: formValue.exam_type_id
         };
-        this.adminService.updateSubject(this.subjectId, request).subscribe({
+        this.adminService.updateSubject(this.subjectId, request)
+          .pipe(takeUntilDestroyed(this.destroyRef))
+          .subscribe({
           next: () => {
             this.router.navigate(['/admin/subjects']);
           },
@@ -220,7 +232,9 @@ export class SubjectFormComponent implements OnInit {
           lesson_id: formValue.lesson_id,
           exam_type_id: formValue.exam_type_id
         };
-        this.adminService.createSubject(request).subscribe({
+        this.adminService.createSubject(request)
+          .pipe(takeUntilDestroyed(this.destroyRef))
+          .subscribe({
           next: () => {
             this.router.navigate(['/admin/subjects']);
           },

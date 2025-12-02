@@ -1,7 +1,8 @@
-import { Component, inject, signal, computed, OnInit, effect } from '@angular/core';
+import { Component, inject, signal, computed, OnInit, effect, ChangeDetectionStrategy, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule, Router } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuthService } from '../../../../core/services/auth.service';
 import { TestService } from '../../../tests/services/test.service';
 import { ResultsService } from '../../../results/services/results.service';
@@ -14,6 +15,7 @@ import { CustomDropdownComponent, DropdownOption } from '../../../../shared/comp
   selector: 'app-dashboard',
   standalone: true,
   imports: [CommonModule, RouterModule, FormsModule, LoadingSpinnerComponent, ErrorMessageComponent, CustomDropdownComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="min-h-screen bg-gradient-to-br from-primary-50 via-purple-50 to-secondary-50">
       <div class="max-w-7xl mx-auto py-8 sm:px-6 lg:px-8">
@@ -108,9 +110,9 @@ import { CustomDropdownComponent, DropdownOption } from '../../../../shared/comp
                 {{ getLessonName(selectedLessonId) }}
                 <button (click)="clearLessonFilter()" class="ml-2 text-green-600 hover:text-green-800">×</button>
               </span>
-              <span *ngIf="searchTerm" 
+              <span *ngIf="searchTerm()" 
                     class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800">
-                "{{ searchTerm }}"
+                "{{ searchTerm() }}"
                 <button (click)="clearSearch()" class="ml-2 text-purple-600 hover:text-purple-800">×</button>
               </span>
               <button (click)="clearAllFilters()" 
@@ -361,6 +363,7 @@ export class DashboardComponent implements OnInit {
   router = inject(Router);
   testService = inject(TestService);
   resultsService = inject(ResultsService);
+  private destroyRef = inject(DestroyRef);
   
   user = this.authService.user;
   isAdmin = computed(() => this.authService.isAdmin());
@@ -464,7 +467,9 @@ export class DashboardComponent implements OnInit {
   }
 
   loadExamTypes(): void {
-    this.testService.getExamTypes().subscribe({
+    this.testService.getExamTypes()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
       next: (response) => {
         if (response.success && response.data) {
           this.examTypes.set(response.data);
@@ -477,7 +482,9 @@ export class DashboardComponent implements OnInit {
   }
 
   loadLessons(): void {
-    this.testService.getLessons().subscribe({
+    this.testService.getLessons()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
       next: (response) => {
         if (response.success && response.data) {
           this.lessons.set(response.data);
@@ -516,7 +523,9 @@ export class DashboardComponent implements OnInit {
       this.selectedExamTypeId || undefined,
       this.selectedLessonId || undefined,
       search
-    ).subscribe({
+    )
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
       next: (response) => {
         this.isLoading.set(false);
         if (response.success && response.data) {
@@ -573,7 +582,9 @@ export class DashboardComponent implements OnInit {
     this.isLoadingStats.set(true);
     // Load all results (with pagination if needed)
     // For now, load first 100 results to calculate statistics
-    this.resultsService.getMyResults().subscribe({
+    this.resultsService.getMyResults()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
       next: (response) => {
         this.isLoadingStats.set(false);
         if (response.success && response.data) {

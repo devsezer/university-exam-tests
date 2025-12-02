@@ -1,6 +1,7 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, ChangeDetectionStrategy, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AdminService } from '../../services/admin.service';
 import { Subject, ExamType, Lesson } from '../../../../models/test.models';
 import { LoadingSpinnerComponent } from '../../../../shared/components/loading-spinner/loading-spinner.component';
@@ -11,6 +12,7 @@ import { DeleteConfirmationComponent } from '../../../../shared/components/delet
   selector: 'app-subjects-list',
   standalone: true,
   imports: [CommonModule, RouterModule, LoadingSpinnerComponent, ErrorMessageComponent, DeleteConfirmationComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="py-6 px-4 sm:px-6 lg:px-8 w-full">
       <div class="mb-6 flex justify-between items-center">
@@ -108,6 +110,7 @@ export class SubjectsListComponent implements OnInit {
   showDeleteDialog = signal(false);
   subjectToDelete = signal<Subject | null>(null);
   deleteMessage = signal('');
+  private destroyRef = inject(DestroyRef);
 
   constructor(private adminService: AdminService) {}
 
@@ -118,7 +121,9 @@ export class SubjectsListComponent implements OnInit {
   loadData(): void {
     this.isLoading.set(true);
     this.errorMessage.set(null);
-    this.adminService.listSubjects().subscribe({
+    this.adminService.listSubjects()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
       next: (response) => {
         if (response.success) {
           this.subjects.set(Array.isArray(response.data) ? response.data : []);
@@ -138,7 +143,9 @@ export class SubjectsListComponent implements OnInit {
   }
 
   loadExamTypes(): void {
-    this.adminService.listExamTypes().subscribe({
+    this.adminService.listExamTypes()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
       next: (response) => {
         if (response.success && response.data) {
           this.examTypes.set(Array.isArray(response.data) ? response.data : []);
@@ -149,7 +156,9 @@ export class SubjectsListComponent implements OnInit {
   }
 
   loadLessons(): void {
-    this.adminService.listLessons().subscribe({
+    this.adminService.listLessons()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
       next: (response) => {
         this.isLoading.set(false);
         if (response.success && response.data) {
@@ -187,7 +196,9 @@ export class SubjectsListComponent implements OnInit {
     const subject = this.subjectToDelete();
     if (!subject) return;
 
-    this.adminService.deleteSubject(subject.id).subscribe({
+    this.adminService.deleteSubject(subject.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
       next: () => {
         this.loadData();
         this.showDeleteDialog.set(false);

@@ -1,6 +1,7 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, ChangeDetectionStrategy, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AdminService } from '../../services/admin.service';
 import { Role } from '../../../../models/role.models';
 import { LoadingSpinnerComponent } from '../../../../shared/components/loading-spinner/loading-spinner.component';
@@ -10,6 +11,7 @@ import { ErrorMessageComponent } from '../../../../shared/components/error-messa
   selector: 'app-roles-list',
   standalone: true,
   imports: [CommonModule, RouterModule, LoadingSpinnerComponent, ErrorMessageComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="py-6 px-4 sm:px-6 lg:px-8 w-full">
       <div class="mb-6">
@@ -71,6 +73,7 @@ export class RolesListComponent implements OnInit {
   roles = signal<Role[]>([]);
   isLoading = signal(true);
   errorMessage = signal<string | null>(null);
+  private destroyRef = inject(DestroyRef);
 
   constructor(private adminService: AdminService) {}
 
@@ -80,7 +83,9 @@ export class RolesListComponent implements OnInit {
 
   loadRoles(): void {
     this.isLoading.set(true);
-    this.adminService.listRoles().subscribe({
+    this.adminService.listRoles()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
       next: (response) => {
         this.isLoading.set(false);
         if (response.success && response.data) {

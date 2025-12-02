@@ -1,6 +1,7 @@
-import { Component, OnInit, signal, computed, ViewChild } from '@angular/core';
+import { Component, OnInit, signal, computed, ViewChild, ChangeDetectionStrategy, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AdminService } from '../../services/admin.service';
 import { TestBook, ExamType, Lesson, Subject } from '../../../../models/test.models';
 import { LoadingSpinnerComponent } from '../../../../shared/components/loading-spinner/loading-spinner.component';
@@ -17,6 +18,7 @@ interface TestBookWithCount extends TestBook {
   selector: 'app-admin-dashboard',
   standalone: true,
   imports: [CommonModule, RouterModule, LoadingSpinnerComponent, ErrorMessageComponent, TestBookCreateModalComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="py-6 px-4 sm:px-6 lg:px-8 w-full">
       <div class="mb-6 flex justify-between items-center">
@@ -191,6 +193,7 @@ export class AdminDashboardComponent implements OnInit {
   errorMessage = signal<string | null>(null);
   viewMode = signal<'grid' | 'list'>('grid');
   @ViewChild('testBookCreateModal') testBookCreateModalRef!: TestBookCreateModalComponent;
+  private destroyRef = inject(DestroyRef);
 
   constructor(private adminService: AdminService) {}
 
@@ -208,7 +211,9 @@ export class AdminDashboardComponent implements OnInit {
       examTypes: this.adminService.listExamTypes(),
       lessons: this.adminService.listLessons(),
       subjects: this.adminService.listSubjects()
-    }).subscribe({
+    })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
       next: (results) => {
         if (results.books.success && results.books.data) {
           this.testBooks.set(Array.isArray(results.books.data) ? results.books.data : []);
@@ -250,7 +255,9 @@ export class AdminDashboardComponent implements OnInit {
       )
     );
 
-    forkJoin(countRequests).subscribe({
+    forkJoin(countRequests)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
       next: (results) => {
         const booksWithCounts: TestBookWithCount[] = results.map(r => ({
           ...r.book,

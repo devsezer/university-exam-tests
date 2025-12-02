@@ -1,7 +1,8 @@
-import { Component, OnInit, signal, computed } from '@angular/core';
+import { Component, OnInit, signal, computed, ChangeDetectionStrategy, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AdminService } from '../../services/admin.service';
 import { User } from '../../../../models/user.models';
 import { PaginatedResponse } from '../../../../models/api.models';
@@ -20,6 +21,7 @@ import { DeleteConfirmationComponent } from '../../../../shared/components/delet
     ErrorMessageComponent,
     DeleteConfirmationComponent
   ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="py-6 px-4 sm:px-6 lg:px-8 w-full">
       <div class="mb-6 flex justify-between items-center">
@@ -238,6 +240,7 @@ export class UsersListComponent implements OnInit {
   Math = Math;
 
   private searchTimeout: any;
+  private destroyRef = inject(DestroyRef);
 
   constructor(private adminService: AdminService) {}
 
@@ -259,7 +262,9 @@ export class UsersListComponent implements OnInit {
       params.is_active = this.filterActive;
     }
 
-    this.adminService.listUsers(params).subscribe({
+    this.adminService.listUsers(params)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
       next: (response) => {
         this.isLoading.set(false);
         if (response.success && response.data) {
@@ -317,7 +322,9 @@ export class UsersListComponent implements OnInit {
     const user = this.userToDelete();
     if (!user) return;
 
-    this.adminService.deleteUser(user.id).subscribe({
+    this.adminService.deleteUser(user.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
       next: () => {
         this.loadUsers();
         this.showDeleteDialog.set(false);

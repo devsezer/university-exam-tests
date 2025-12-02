@@ -1,4 +1,4 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, computed, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
@@ -7,6 +7,7 @@ import { AuthService } from '../../../core/services/auth.service';
   selector: 'app-header',
   standalone: true,
   imports: [CommonModule, RouterModule],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <header class="sticky top-0 z-50 glass-strong shadow-lg backdrop-blur-xl border-b border-white/20 animate-slide-down bg-gradient-to-r from-primary-600/90 via-primary-700/90 to-primary-800/90">
       <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

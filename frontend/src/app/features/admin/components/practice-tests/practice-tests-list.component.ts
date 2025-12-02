@@ -1,6 +1,7 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, ChangeDetectionStrategy, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AdminService } from '../../services/admin.service';
 import { PracticeTest, TestBook, Subject } from '../../../../models/test.models';
 import { LoadingSpinnerComponent } from '../../../../shared/components/loading-spinner/loading-spinner.component';
@@ -11,6 +12,7 @@ import { DeleteConfirmationComponent } from '../../../../shared/components/delet
   selector: 'app-practice-tests-list',
   standalone: true,
   imports: [CommonModule, RouterModule, LoadingSpinnerComponent, ErrorMessageComponent, DeleteConfirmationComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="py-6 px-4 sm:px-6 lg:px-8 w-full">
       <div class="mb-6 flex justify-between items-center">
@@ -103,6 +105,7 @@ export class PracticeTestsListComponent implements OnInit {
   showDeleteDialog = signal(false);
   practiceTestToDelete = signal<PracticeTest | null>(null);
   deleteMessage = signal('');
+  private destroyRef = inject(DestroyRef);
 
   constructor(private adminService: AdminService) {}
 
@@ -112,7 +115,9 @@ export class PracticeTestsListComponent implements OnInit {
 
   loadData(): void {
     this.isLoading.set(true);
-    this.adminService.listPracticeTests().subscribe({
+    this.adminService.listPracticeTests()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
       next: (response) => {
         if (response.success && response.data) {
           this.practiceTests.set(response.data);
@@ -128,7 +133,9 @@ export class PracticeTestsListComponent implements OnInit {
   }
 
   loadTestBooks(): void {
-    this.adminService.listTestBooks().subscribe({
+    this.adminService.listTestBooks()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
       next: (response) => {
         this.isLoading.set(false);
         if (response.success && response.data) {
@@ -142,7 +149,9 @@ export class PracticeTestsListComponent implements OnInit {
   }
 
   loadSubjects(): void {
-    this.adminService.listSubjects().subscribe({
+    this.adminService.listSubjects()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
       next: (response) => {
         if (response.success && response.data) {
           this.subjects.set(response.data);
@@ -179,7 +188,9 @@ export class PracticeTestsListComponent implements OnInit {
     const practiceTest = this.practiceTestToDelete();
     if (!practiceTest) return;
 
-    this.adminService.deletePracticeTest(practiceTest.id).subscribe({
+    this.adminService.deletePracticeTest(practiceTest.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
       next: () => {
         this.loadData();
         this.showDeleteDialog.set(false);

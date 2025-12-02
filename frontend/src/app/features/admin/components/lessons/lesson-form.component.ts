@@ -1,7 +1,8 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, ChangeDetectionStrategy, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AdminService } from '../../services/admin.service';
 import { Lesson, CreateLessonRequest, UpdateLessonRequest } from '../../../../models/test.models';
 import { LoadingSpinnerComponent } from '../../../../shared/components/loading-spinner/loading-spinner.component';
@@ -11,6 +12,7 @@ import { ErrorMessageComponent } from '../../../../shared/components/error-messa
   selector: 'app-lesson-form',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, RouterModule, LoadingSpinnerComponent, ErrorMessageComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="max-w-2xl py-6 px-4 sm:px-6 lg:px-8 w-full">
       <div class="mb-6">
@@ -72,6 +74,7 @@ export class LessonFormComponent implements OnInit {
   isEditMode = signal(false);
   errorMessage = signal<string | null>(null);
   lessonId: string | null = null;
+  private destroyRef = inject(DestroyRef);
 
   constructor(
     private fb: FormBuilder,
@@ -97,7 +100,9 @@ export class LessonFormComponent implements OnInit {
 
   loadLesson(id: string): void {
     this.isLoading.set(true);
-    this.adminService.getLesson(id).subscribe({
+    this.adminService.getLesson(id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
       next: (response) => {
         this.isLoading.set(false);
         if (response.success && response.data) {
@@ -126,7 +131,9 @@ export class LessonFormComponent implements OnInit {
         const request: UpdateLessonRequest = {
           name: formValue.name
         };
-        this.adminService.updateLesson(this.lessonId, request).subscribe({
+        this.adminService.updateLesson(this.lessonId, request)
+          .pipe(takeUntilDestroyed(this.destroyRef))
+          .subscribe({
           next: () => {
             this.router.navigate(['/admin/lessons']);
           },
@@ -139,7 +146,9 @@ export class LessonFormComponent implements OnInit {
         const request: CreateLessonRequest = {
           name: formValue.name
         };
-        this.adminService.createLesson(request).subscribe({
+        this.adminService.createLesson(request)
+          .pipe(takeUntilDestroyed(this.destroyRef))
+          .subscribe({
           next: () => {
             this.router.navigate(['/admin/lessons']);
           },

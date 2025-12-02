@@ -1,6 +1,7 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, ChangeDetectionStrategy, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ResultsService } from '../../services/results.service';
 import { TestService } from '../../../tests/services/test.service';
 import { TestResult, PracticeTest } from '../../../../models/test.models';
@@ -11,6 +12,7 @@ import { ErrorMessageComponent } from '../../../../shared/components/error-messa
   selector: 'app-result-detail',
   standalone: true,
   imports: [CommonModule, LoadingSpinnerComponent, ErrorMessageComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="max-w-4xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
       <div class="mb-6">
@@ -95,6 +97,8 @@ export class ResultDetailComponent implements OnInit {
   isLoading = signal(true);
   errorMessage = signal<string | null>(null);
 
+  private destroyRef = inject(DestroyRef);
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
@@ -114,7 +118,9 @@ export class ResultDetailComponent implements OnInit {
 
   loadResult(id: string): void {
     this.isLoading.set(true);
-    this.resultsService.getResult(id).subscribe({
+    this.resultsService.getResult(id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
       next: (response) => {
         if (response.success && response.data) {
           this.result.set(response.data);
@@ -133,7 +139,9 @@ export class ResultDetailComponent implements OnInit {
   }
 
   loadPracticeTest(id: string): void {
-    this.testService.getPracticeTest(id).subscribe({
+    this.testService.getPracticeTest(id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
       next: (response) => {
         this.isLoading.set(false);
         if (response.success && response.data) {
