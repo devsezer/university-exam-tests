@@ -6,11 +6,12 @@ import { TestService } from '../../services/test.service';
 import { ExamType, Lesson, Subject, TestBook, PracticeTest, PracticeTestsGrouped } from '../../../../models/test.models';
 import { LoadingSpinnerComponent } from '../../../../shared/components/loading-spinner/loading-spinner.component';
 import { ErrorMessageComponent } from '../../../../shared/components/error-message/error-message.component';
+import { CustomDropdownComponent, DropdownOption } from '../../../../shared/components/custom-dropdown/custom-dropdown.component';
 
 @Component({
   selector: 'app-test-selector',
   standalone: true,
-  imports: [CommonModule, FormsModule, LoadingSpinnerComponent, ErrorMessageComponent],
+  imports: [CommonModule, FormsModule, LoadingSpinnerComponent, ErrorMessageComponent, CustomDropdownComponent],
   template: `
     <div class="max-w-6xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
       <h1 class="text-3xl font-bold text-gray-900 mb-8">Test Seç</h1>
@@ -35,28 +36,28 @@ import { ErrorMessageComponent } from '../../../../shared/components/error-messa
       <!-- Step 1: Exam Type + Lesson Selection -->
       <div *ngIf="currentStep() === 1" class="bg-white shadow rounded-lg p-6 space-y-6">
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">Sınav Türü</label>
-          <select [(ngModel)]="selectedExamTypeId" 
-                  (change)="onExamTypeChange()"
-                  class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
-            <option [value]="null">Sınav türü seçiniz</option>
-            <option *ngFor="let examType of examTypes()" [value]="examType.id">
-              {{ examType.name }}
-            </option>
-          </select>
+          <app-custom-dropdown
+            id="exam-type-selector"
+            label="Sınav Türü"
+            [options]="examTypeOptions()"
+            [(ngModel)]="selectedExamTypeId"
+            (ngModelChange)="onExamTypeChange()"
+            placeholder="Sınav türü seçiniz"
+            leftIcon="tag">
+          </app-custom-dropdown>
         </div>
 
         <div *ngIf="selectedExamTypeId">
-          <label class="block text-sm font-medium text-gray-700 mb-2">Ders</label>
-          <select [(ngModel)]="selectedLessonId" 
-                  (change)="onLessonChange()"
-                  [disabled]="!selectedExamTypeId || isLoadingLessons()"
-                  class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm disabled:bg-gray-100">
-            <option [value]="null">Ders seçiniz</option>
-            <option *ngFor="let lesson of lessons()" [value]="lesson.id">
-              {{ lesson.name }}
-            </option>
-          </select>
+          <app-custom-dropdown
+            id="lesson-selector"
+            label="Ders"
+            [options]="lessonOptions()"
+            [(ngModel)]="selectedLessonId"
+            (ngModelChange)="onLessonChange()"
+            [disabled]="!selectedExamTypeId || isLoadingLessons()"
+            placeholder="Ders seçiniz"
+            leftIcon="tag">
+          </app-custom-dropdown>
           <app-loading-spinner *ngIf="isLoadingLessons()"></app-loading-spinner>
         </div>
       </div>
@@ -189,6 +190,20 @@ export class TestSelectorComponent {
   isLoadingTestBooks = signal(false);
   isLoadingPracticeTests = signal(false);
   errorMessage = signal<string | null>(null);
+
+  examTypeOptions = computed<DropdownOption[]>(() => {
+    return this.examTypes().map(examType => ({
+      value: examType.id,
+      label: examType.name
+    }));
+  });
+
+  lessonOptions = computed<DropdownOption[]>(() => {
+    return this.lessons().map(lesson => ({
+      value: lesson.id,
+      label: lesson.name
+    }));
+  });
 
   constructor(
     private testService: TestService,

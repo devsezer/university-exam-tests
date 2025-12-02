@@ -130,6 +130,10 @@ pub trait TestManagementService: Send + Sync {
         &self,
         subject_id: Uuid,
     ) -> Result<Vec<TestBookResponse>, TestManagementError>;
+    async fn list_test_books_by_exam_type(
+        &self,
+        exam_type_id: Uuid,
+    ) -> Result<Vec<TestBookResponse>, TestManagementError>;
     async fn list_test_books_by_exam_type_and_lesson(
         &self,
         exam_type_id: Uuid,
@@ -654,6 +658,36 @@ where
         subject_id: Uuid,
     ) -> Result<Vec<TestBookResponse>, TestManagementError> {
         let test_books = self.test_book_repo.find_by_subject_id(subject_id).await?;
+
+        // Get subject IDs for each test book
+        let mut responses = Vec::new();
+        for tb in test_books {
+            let subject_ids = self
+                .test_book_subject_repo
+                .find_subject_ids_by_test_book_id(tb.id)
+                .await?;
+            responses.push(TestBookResponse {
+                id: tb.id,
+                name: tb.name,
+                lesson_id: tb.lesson_id,
+                exam_type_id: tb.exam_type_id,
+                subject_ids,
+                published_year: tb.published_year,
+                created_at: tb.created_at,
+            });
+        }
+
+        Ok(responses)
+    }
+
+    async fn list_test_books_by_exam_type(
+        &self,
+        exam_type_id: Uuid,
+    ) -> Result<Vec<TestBookResponse>, TestManagementError> {
+        let test_books = self
+            .test_book_repo
+            .find_by_exam_type_id(exam_type_id)
+            .await?;
 
         // Get subject IDs for each test book
         let mut responses = Vec::new();

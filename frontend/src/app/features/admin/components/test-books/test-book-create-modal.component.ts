@@ -1,15 +1,16 @@
-import { Component, OnInit, signal, Input, Output, EventEmitter } from '@angular/core';
+import { Component, OnInit, signal, Input, Output, EventEmitter, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, FormArray, ReactiveFormsModule, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 import { AdminService } from '../../services/admin.service';
 import { ExamType, Lesson, Subject, CreateTestBookRequest } from '../../../../models/test.models';
 import { LoadingSpinnerComponent } from '../../../../shared/components/loading-spinner/loading-spinner.component';
 import { ErrorMessageComponent } from '../../../../shared/components/error-message/error-message.component';
+import { CustomDropdownComponent, DropdownOption } from '../../../../shared/components/custom-dropdown/custom-dropdown.component';
 
 @Component({
   selector: 'app-test-book-create-modal',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, LoadingSpinnerComponent, ErrorMessageComponent],
+  imports: [CommonModule, ReactiveFormsModule, LoadingSpinnerComponent, ErrorMessageComponent, CustomDropdownComponent],
   template: `
     <div *ngIf="isOpen()" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
       <!-- Backdrop -->
@@ -44,39 +45,33 @@ import { ErrorMessageComponent } from '../../../../shared/components/error-messa
               <form [formGroup]="form" (ngSubmit)="onSubmit()" class="space-y-6">
                 <!-- Sınav Türü -->
                 <div>
-                  <label for="exam_type_id" class="block text-sm font-medium text-gray-700">Sınav Türü *</label>
-                  <select id="exam_type_id"
-                          formControlName="exam_type_id"
-                          (change)="onExamTypeChange()"
-                          class="mt-1 block w-full px-4 py-3 rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
-                    <option [value]="null">Sınav türü seçiniz</option>
-                    <option *ngFor="let examType of examTypes()" [value]="examType.id">
-                      {{ examType.name }}
-                    </option>
-                  </select>
-                  <div *ngIf="form.get('exam_type_id')?.invalid && form.get('exam_type_id')?.touched"
-                       class="mt-1 text-sm text-red-600">
-                    Sınav türü seçilmelidir
-                  </div>
+                  <app-custom-dropdown
+                    id="exam_type_id"
+                    label="Sınav Türü"
+                    [options]="examTypeOptions()"
+                    formControlName="exam_type_id"
+                    (valueChange)="onExamTypeChange()"
+                    placeholder="Sınav türü seçiniz"
+                    [required]="true"
+                    [errorMessage]="form.get('exam_type_id')?.invalid && form.get('exam_type_id')?.touched ? 'Sınav türü seçilmelidir' : undefined"
+                    leftIcon="tag">
+                  </app-custom-dropdown>
                 </div>
 
                 <!-- Ders -->
                 <div>
-                  <label for="lesson_id" class="block text-sm font-medium text-gray-700">Ders *</label>
-                  <select id="lesson_id"
-                          formControlName="lesson_id"
-                          (change)="onLessonChange()"
-                          [disabled]="!form.get('exam_type_id')?.value"
-                          class="mt-1 block w-full px-4 py-3 rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm disabled:bg-gray-100">
-                    <option [value]="null">Ders seçiniz</option>
-                    <option *ngFor="let lesson of lessons()" [value]="lesson.id">
-                      {{ lesson.name }}
-                    </option>
-                  </select>
-                  <div *ngIf="form.get('lesson_id')?.invalid && form.get('lesson_id')?.touched"
-                       class="mt-1 text-sm text-red-600">
-                    Ders seçilmelidir
-                  </div>
+                  <app-custom-dropdown
+                    id="lesson_id"
+                    label="Ders"
+                    [options]="lessonOptions()"
+                    formControlName="lesson_id"
+                    (valueChange)="onLessonChange()"
+                    [disabled]="!form.get('exam_type_id')?.value"
+                    placeholder="Ders seçiniz"
+                    [required]="true"
+                    [errorMessage]="form.get('lesson_id')?.invalid && form.get('lesson_id')?.touched ? 'Ders seçilmelidir' : undefined"
+                    leftIcon="tag">
+                  </app-custom-dropdown>
                 </div>
 
                 <!-- Konular -->
@@ -173,6 +168,20 @@ export class TestBookCreateModalComponent implements OnInit {
   lessons = signal<Lesson[]>([]);
   filteredSubjects = signal<Subject[]>([]);
   isLoadingSubjects = signal(false);
+
+  examTypeOptions = computed<DropdownOption[]>(() => {
+    return this.examTypes().map(examType => ({
+      value: examType.id,
+      label: examType.name
+    }));
+  });
+
+  lessonOptions = computed<DropdownOption[]>(() => {
+    return this.lessons().map(lesson => ({
+      value: lesson.id,
+      label: lesson.name
+    }));
+  });
 
   constructor(
     private fb: FormBuilder,

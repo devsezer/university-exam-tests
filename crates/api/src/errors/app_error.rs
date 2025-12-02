@@ -9,6 +9,7 @@ use thiserror::Error;
 use application::services::{
     AuthError, ResultError, TestManagementError, TestSolvingError,
 };
+use domain::errors::DomainError;
 use infrastructure::security::JwtError;
 
 /// Application error type that implements IntoResponse for Axum.
@@ -210,6 +211,33 @@ impl From<ResultError> for AppError {
         match err {
             ResultError::TestResultNotFound => AppError::NotFound("Test result not found".to_string()),
             ResultError::InternalError(_) => AppError::InternalServerError,
+        }
+    }
+}
+
+impl From<DomainError> for AppError {
+    fn from(err: DomainError) -> Self {
+        match err {
+            DomainError::UserNotFound(_) | DomainError::UserNotFoundByEmail(_) | DomainError::UserNotFoundByUsername(_) => {
+                AppError::NotFound("User not found".to_string())
+            }
+            DomainError::RefreshTokenNotFound => AppError::NotFound("Refresh token not found".to_string()),
+            DomainError::RoleNotFound(_) => AppError::NotFound("Role not found".to_string()),
+            DomainError::PermissionNotFound(_) => AppError::NotFound("Permission not found".to_string()),
+            DomainError::DuplicateEmail(_) | DomainError::DuplicateUsername(_) => {
+                AppError::Conflict("Resource already exists".to_string())
+            }
+            DomainError::InvalidCredentials => AppError::InvalidCredentials,
+            DomainError::AccountDeactivated => AppError::AccountDeactivated,
+            DomainError::AccountDeleted => AppError::AccountDeleted,
+            DomainError::RefreshTokenExpired => AppError::RefreshTokenExpired,
+            DomainError::RefreshTokenRevoked => AppError::RefreshTokenRevoked,
+            DomainError::InsufficientPermissions => AppError::Forbidden,
+            DomainError::ValidationError(msg) => AppError::ValidationError(msg),
+            DomainError::DatabaseError(_) | DomainError::CacheError(_) | DomainError::InternalError(_) => {
+                AppError::InternalServerError
+            }
+            _ => AppError::InternalServerError,
         }
     }
 }

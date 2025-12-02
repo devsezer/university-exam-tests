@@ -98,9 +98,13 @@ export class LoginComponent {
     private authService: AuthService,
     private router: Router
   ) {
+    // this.loginForm = this.fb.group({
+    //   email: ['admin@deneme.com', [Validators.required, Validators.email]],
+    //   password: ['Admin123!', [Validators.required]]
+    // });
     this.loginForm = this.fb.group({
-      email: ['admin@deneme.com', [Validators.required, Validators.email]],
-      password: ['Admin123!', [Validators.required]]
+      email: ['info@sezer.net', [Validators.required, Validators.email]],
+      password: ['dcrtrv40e', [Validators.required]]
     });
   }
 

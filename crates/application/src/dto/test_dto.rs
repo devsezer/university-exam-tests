@@ -175,3 +175,35 @@ pub struct SolveTestResponse {
     pub hours_until_retake: Option<f64>,
 }
 
+// TestBook with statistics DTOs
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TestBookWithStatsResponse {
+    pub id: Uuid,
+    pub name: String,
+    pub lesson_id: Uuid,
+    pub exam_type_id: Uuid,
+    pub subject_ids: Vec<Uuid>,
+    pub published_year: u16,
+    pub created_at: DateTime<Utc>,
+    pub total_test_count: i32,
+    pub solved_test_count: i32,
+    pub progress_percentage: f64,
+}
+
+// PracticeTest with status DTOs
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PracticeTestWithStatusResponse {
+    pub id: Uuid,
+    pub name: String,
+    pub test_number: i32,
+    pub question_count: i32,
+    pub answer_key: String,
+    pub test_book_id: Uuid,
+    pub subject_id: Uuid,
+    pub created_at: DateTime<Utc>,
+    pub status: String, // "available" | "solved" | "waiting"
+    pub last_solved_at: Option<DateTime<Utc>>,
+    pub result_id: Option<Uuid>,
+    pub hours_until_retake: Option<f64>,
+}
+

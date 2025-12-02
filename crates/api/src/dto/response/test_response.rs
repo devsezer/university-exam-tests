@@ -197,3 +197,88 @@ impl From<application::dto::SolveTestResponse> for SolveTestResponse {
     }
 }
 
+/// Response for test book with statistics.
+#[derive(Debug, Clone, Serialize, ToSchema)]
+pub struct TestBookWithStatsResponse {
+    #[schema(example = "550e8400-e29b-41d4-a716-446655440000")]
+    pub id: Uuid,
+    #[schema(example = "Limit Yayınları TYT Matematik")]
+    pub name: String,
+    #[schema(example = "550e8400-e29b-41d4-a716-446655440001")]
+    pub lesson_id: Uuid,
+    #[schema(example = "550e8400-e29b-41d4-a716-446655440002")]
+    pub exam_type_id: Uuid,
+    pub subject_ids: Vec<Uuid>,
+    #[schema(example = 2024)]
+    pub published_year: u16,
+    pub created_at: DateTime<Utc>,
+    #[schema(example = 25)]
+    pub total_test_count: i32,
+    #[schema(example = 10)]
+    pub solved_test_count: i32,
+    #[schema(example = 40.0)]
+    pub progress_percentage: f64,
+}
+
+/// Response for practice test with status.
+#[derive(Debug, Clone, Serialize, ToSchema)]
+pub struct PracticeTestWithStatusResponse {
+    #[schema(example = "550e8400-e29b-41d4-a716-446655440000")]
+    pub id: Uuid,
+    #[schema(example = "Deneme 1")]
+    pub name: String,
+    #[schema(example = 1)]
+    pub test_number: i32,
+    #[schema(example = 40)]
+    pub question_count: i32,
+    #[schema(example = "ABCDABCDABCDABCDABCDABCDABCDABCDABCDABCD")]
+    pub answer_key: String,
+    #[schema(example = "550e8400-e29b-41d4-a716-446655440001")]
+    pub test_book_id: Uuid,
+    #[schema(example = "550e8400-e29b-41d4-a716-446655440002")]
+    pub subject_id: Uuid,
+    pub created_at: DateTime<Utc>,
+    #[schema(example = "available")]
+    pub status: String,
+    pub last_solved_at: Option<DateTime<Utc>>,
+    pub result_id: Option<Uuid>,
+    #[schema(example = 15.5)]
+    pub hours_until_retake: Option<f64>,
+}
+
+impl From<application::dto::TestBookWithStatsResponse> for TestBookWithStatsResponse {
+    fn from(dto: application::dto::TestBookWithStatsResponse) -> Self {
+        Self {
+            id: dto.id,
+            name: dto.name,
+            lesson_id: dto.lesson_id,
+            exam_type_id: dto.exam_type_id,
+            subject_ids: dto.subject_ids,
+            published_year: dto.published_year,
+            created_at: dto.created_at,
+            total_test_count: dto.total_test_count,
+            solved_test_count: dto.solved_test_count,
+            progress_percentage: dto.progress_percentage,
+        }
+    }
+}
+
+impl From<application::dto::PracticeTestWithStatusResponse> for PracticeTestWithStatusResponse {
+    fn from(dto: application::dto::PracticeTestWithStatusResponse) -> Self {
+        Self {
+            id: dto.id,
+            name: dto.name,
+            test_number: dto.test_number,
+            question_count: dto.question_count,
+            answer_key: dto.answer_key,
+            test_book_id: dto.test_book_id,
+            subject_id: dto.subject_id,
+            created_at: dto.created_at,
+            status: dto.status,
+            last_solved_at: dto.last_solved_at,
+            result_id: dto.result_id,
+            hours_until_retake: dto.hours_until_retake,
+        }
+    }
+}
+

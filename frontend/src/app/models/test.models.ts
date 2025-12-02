@@ -66,6 +66,27 @@ export interface PracticeTestsGrouped {
   [subjectId: string]: PracticeTest[];
 }
 
+// Test book with statistics
+export interface TestBookWithStats extends TestBook {
+  total_test_count: number;
+  solved_test_count: number;
+  progress_percentage: number;
+}
+
+// Practice test with status
+export interface PracticeTestWithStatus extends PracticeTest {
+  status: 'available' | 'solved' | 'waiting';
+  last_solved_at?: string;
+  result_id?: string;
+  hours_until_retake?: number;
+}
+
+// Test book detail with statistics and tests
+export interface TestBookDetail extends TestBookWithStats {
+  average_net_score?: number;
+  tests: PracticeTestWithStatus[];
+}
+
 // Admin Request DTOs
 export interface CreateExamTypeRequest {
   name: string;

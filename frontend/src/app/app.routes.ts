@@ -2,6 +2,9 @@ import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
 import { adminGuard } from './core/guards/admin.guard';
 import { DashboardComponent } from './features/dashboard/components/dashboard/dashboard.component';
+import { BookDetailComponent } from './features/dashboard/components/book-detail/book-detail.component';
+import { TestSolverComponent } from './features/tests/components/test-solver/test-solver.component';
+import { TestResultComponent } from './features/tests/components/test-result/test-result.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/dashboard', pathMatch: 'full' },
@@ -14,9 +17,19 @@ export const routes: Routes = [
     component: DashboardComponent, 
     canActivate: [authGuard] 
   },
-  { 
-    path: 'tests', 
-    loadChildren: () => import('./features/tests/tests.routes').then(m => m.testsRoutes),
+  {
+    path: 'dashboard/books/:id',
+    component: BookDetailComponent,
+    canActivate: [authGuard]
+  },
+  {
+    path: 'tests/solve/:id',
+    component: TestSolverComponent,
+    canActivate: [authGuard]
+  },
+  {
+    path: 'tests/result/:id',
+    component: TestResultComponent,
     canActivate: [authGuard]
   },
   { 

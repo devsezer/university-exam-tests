@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -7,11 +7,12 @@ import { PracticeTest, TestBook, Subject, CreatePracticeTestRequest, UpdatePract
 import { LoadingSpinnerComponent } from '../../../../shared/components/loading-spinner/loading-spinner.component';
 import { ErrorMessageComponent } from '../../../../shared/components/error-message/error-message.component';
 import { AnswerKeyCounterComponent } from '../../../../shared/components/answer-key-counter/answer-key-counter.component';
+import { CustomDropdownComponent, DropdownOption } from '../../../../shared/components/custom-dropdown/custom-dropdown.component';
 
 @Component({
   selector: 'app-practice-test-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule, LoadingSpinnerComponent, ErrorMessageComponent, AnswerKeyCounterComponent],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, LoadingSpinnerComponent, ErrorMessageComponent, AnswerKeyCounterComponent, CustomDropdownComponent],
   template: `
     <div class="max-w-2xl py-6 px-4 sm:px-6 lg:px-8 w-full">
       <div class="mb-6">
@@ -34,43 +35,33 @@ import { AnswerKeyCounterComponent } from '../../../../shared/components/answer-
         <div class="bg-white shadow rounded-lg p-6">
           <form [formGroup]="form" (ngSubmit)="onSubmit()" class="space-y-6">
             <div>
-              <label for="test_book_id" class="block text-sm font-medium text-gray-700">Test Kitabı *</label>
-              <select id="test_book_id" 
-                      formControlName="test_book_id"
-                      (change)="onTestBookChange()"
-                      class="mt-1 block w-full px-4 py-3 rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
-                <option [value]="null" disabled>Test kitabı seçiniz</option>
-                @for (testBook of testBooks(); track testBook.id) {
-                  <option [value]="testBook.id">
-                    {{ testBook.name }} ({{ testBook.published_year }})
-                  </option>
-                }
-              </select>
-              <div *ngIf="form.get('test_book_id')?.invalid && form.get('test_book_id')?.touched" 
-                   class="mt-1 text-sm text-red-600">
-                Test kitabı seçilmelidir
-              </div>
+              <app-custom-dropdown
+                id="test_book_id"
+                label="Test Kitabı"
+                [options]="testBookOptions()"
+                formControlName="test_book_id"
+                (valueChange)="onTestBookChange()"
+                placeholder="Test kitabı seçiniz"
+                [required]="true"
+                [errorMessage]="form.get('test_book_id')?.invalid && form.get('test_book_id')?.touched ? 'Test kitabı seçilmelidir' : undefined"
+                leftIcon="tag">
+              </app-custom-dropdown>
             </div>
 
             <div *ngIf="form.get('test_book_id')?.value">
-              <label for="subject_id" class="block text-sm font-medium text-gray-700">Konu *</label>
-              <select id="subject_id" 
-                      formControlName="subject_id"
-                      [disabled]="!form.get('test_book_id')?.value || isLoadingSubjects()"
-                      class="mt-1 block w-full px-4 py-3 rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm disabled:bg-gray-100">
-                <option [value]="null" disabled>Konu seçiniz</option>
-                @for (subject of filteredSubjects(); track subject.id) {
-                  <option [value]="subject.id">
-                    {{ subject.name }}
-                  </option>
-                }
-              </select>
+              <app-custom-dropdown
+                id="subject_id"
+                label="Konu"
+                [options]="subjectOptions()"
+                formControlName="subject_id"
+                [disabled]="!form.get('test_book_id')?.value || isLoadingSubjects()"
+                placeholder="Konu seçiniz"
+                [required]="true"
+                [errorMessage]="form.get('subject_id')?.invalid && form.get('subject_id')?.touched ? 'Konu seçilmelidir' : undefined"
+                leftIcon="tag">
+              </app-custom-dropdown>
               <div *ngIf="isLoadingSubjects()" class="mt-2">
                 <app-loading-spinner></app-loading-spinner>
-              </div>
-              <div *ngIf="form.get('subject_id')?.invalid && form.get('subject_id')?.touched" 
-                   class="mt-1 text-sm text-red-600">
-                Konu seçilmelidir
               </div>
             </div>
 
@@ -170,6 +161,20 @@ export class PracticeTestFormComponent implements OnInit {
   readonly filteredSubjects = signal<Subject[]>([]);
   isLoadingSubjects = signal(false);
   practiceTestId: string | null = null;
+
+  testBookOptions = computed<DropdownOption[]>(() => {
+    return this.testBooks().map(testBook => ({
+      value: testBook.id,
+      label: `${testBook.name} (${testBook.published_year})`
+    }));
+  });
+
+  subjectOptions = computed<DropdownOption[]>(() => {
+    return this.filteredSubjects().map(subject => ({
+      value: subject.id,
+      label: subject.name
+    }));
+  });
 
   constructor(
     private fb: FormBuilder,

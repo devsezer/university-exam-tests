@@ -6,7 +6,10 @@ import {
   Lesson,
   Subject,
   TestBook,
+  TestBookWithStats,
+  TestBookDetail,
   PracticeTest,
+  PracticeTestWithStatus,
   PracticeTestsGrouped,
   TestResult,
   SolveTestRequest,
@@ -61,5 +64,25 @@ export class TestService {
 
   solveTest(testId: string, request: SolveTestRequest): Observable<ApiResponse<SolveTestResponse>> {
     return this.api.post<SolveTestResponse>(`/tests/${testId}/solve`, request);
+  }
+
+  getTestBooksWithStats(examTypeId?: string, lessonId?: string, search?: string): Observable<ApiResponse<TestBookWithStats[]>> {
+    const params: Record<string, string> = {};
+    if (examTypeId) params['exam_type_id'] = examTypeId;
+    if (lessonId) params['lesson_id'] = lessonId;
+    if (search) params['search'] = search;
+    return this.api.get<TestBookWithStats[]>('/test-books-with-stats', Object.keys(params).length ? params : undefined);
+  }
+
+  getTestBookDetail(id: string): Observable<ApiResponse<TestBookDetail>> {
+    // For now, we'll combine multiple calls to get the detail
+    // In the future, we can add a dedicated endpoint
+    return this.api.get<TestBookDetail>(`/test-books/${id}`);
+  }
+
+  getPracticeTestsWithStatus(bookId: string, subjectId?: string): Observable<ApiResponse<PracticeTestWithStatus[]>> {
+    const params: Record<string, string> = {};
+    if (subjectId) params['subject_id'] = subjectId;
+    return this.api.get<PracticeTestWithStatus[]>(`/test-books/${bookId}/practice-tests-with-status`, Object.keys(params).length ? params : undefined);
   }
 }

@@ -14,11 +14,13 @@ use crate::dto::request::{
 };
 use crate::dto::response::{
     ApiResponse, ExamTypeResponse, LessonResponse, MessageResponse, PaginatedResponse,
-    PracticeTestResponse, SolveTestResponse, SubjectResponse, TestBookResponse, TestResultResponse,
+    PracticeTestResponse, PracticeTestWithStatusResponse, SolveTestResponse, SubjectResponse,
+    TestBookResponse, TestBookWithStatsResponse, TestResultResponse,
 };
 use crate::errors::AppError;
 use crate::extractors::{CurrentUser, RequireAdmin};
 use crate::state::AppState;
+use domain::repositories::TestResultRepository;
 
 /// Helper function to log service errors and convert to AppError
 fn handle_service_error<E: std::fmt::Debug + Into<AppError>>(operation: &str, e: E) -> AppError {
@@ -1363,5 +1365,237 @@ pub async fn list_my_results(
             total_pages,
         },
     })))
+}
+
+/// List test books with statistics (total test count, solved test count, progress percentage)
+#[utoipa::path(
+    get,
+    path = "/api/v1/test-books-with-stats",
+    params(
+        ("exam_type_id" = Option<Uuid>, Query, description = "Filter by exam type ID"),
+        ("lesson_id" = Option<Uuid>, Query, description = "Filter by lesson ID"),
+        ("search" = Option<String>, Query, description = "Search by book name")
+    ),
+    responses(
+        (status = 200, description = "Test books with statistics retrieved", body = ApiResponse<Vec<TestBookWithStatsResponse>>),
+        (status = 401, description = "Unauthorized"),
+    ),
+    tag = "tests",
+    security(("bearerAuth" = []))
+)]
+pub async fn list_test_books_with_stats(
+    State(state): State<AppState>,
+    user: CurrentUser,
+    Query(params): Query<std::collections::HashMap<String, String>>,
+) -> Result<Json<ApiResponse<Vec<TestBookWithStatsResponse>>>, AppError> {
+    let exam_type_id = params
+        .get("exam_type_id")
+        .and_then(|s| Uuid::parse_str(s).ok());
+    let lesson_id = params
+        .get("lesson_id")
+        .and_then(|s| Uuid::parse_str(s).ok());
+    let search = params.get("search").cloned();
+
+    // Get test books based on filters
+    let test_books = match (exam_type_id, lesson_id) {
+        (Some(exam_type_id), Some(lesson_id)) => {
+            state
+                .test_management_service
+                .list_test_books_by_exam_type_and_lesson(exam_type_id, lesson_id)
+                .await
+                .map_err(|e| handle_service_error("service_call", e))?
+        }
+        (Some(exam_type_id), None) => {
+            state
+                .test_management_service
+                .list_test_books_by_exam_type(exam_type_id)
+                .await
+                .map_err(|e| handle_service_error("service_call", e))?
+        }
+        _ => {
+            state
+                .test_management_service
+                .list_all_test_books()
+                .await
+                .map_err(|e| handle_service_error("service_call", e))?
+        }
+    };
+
+    // Filter by search if provided
+    let filtered_books: Vec<_> = if let Some(search_term) = search {
+        test_books
+            .into_iter()
+            .filter(|book| book.name.to_lowercase().contains(&search_term.to_lowercase()))
+            .collect()
+    } else {
+        test_books
+    };
+
+    // Get all practice tests for these books
+    let mut books_with_stats = Vec::new();
+    for book in filtered_books {
+        // Get practice tests for this book
+        let practice_tests = state
+            .test_management_service
+            .list_practice_tests_by_test_book(book.id)
+            .await
+            .map_err(|e| handle_service_error("service_call", e))?;
+
+        let total_test_count = practice_tests.len() as i32;
+
+        // Get user's results for these practice tests
+        let practice_test_ids: Vec<Uuid> = practice_tests.iter().map(|pt| pt.id).collect();
+        let mut solved_count = 0;
+        
+        for practice_test_id in practice_test_ids {
+            match state
+                .test_result_repo
+                .find_latest_by_user_and_practice_test(user.id, practice_test_id)
+                .await
+            {
+                Ok(Some(_)) => {
+                    solved_count += 1;
+                }
+                Ok(None) => {}
+                Err(e) => {
+                    // If there's an error checking, log it and skip this test
+                    // This shouldn't happen in normal operation
+                    error!("Error checking test result: {:?}", e);
+                }
+            }
+        }
+
+        let progress_percentage = if total_test_count > 0 {
+            (solved_count as f64 / total_test_count as f64) * 100.0
+        } else {
+            0.0
+        };
+
+        books_with_stats.push(TestBookWithStatsResponse {
+            id: book.id,
+            name: book.name,
+            lesson_id: book.lesson_id,
+            exam_type_id: book.exam_type_id,
+            subject_ids: book.subject_ids,
+            published_year: book.published_year,
+            created_at: book.created_at,
+            total_test_count,
+            solved_test_count: solved_count,
+            progress_percentage,
+        });
+    }
+
+    Ok(Json(ApiResponse::success(books_with_stats)))
+}
+
+/// List practice tests with status for a test book
+#[utoipa::path(
+    get,
+    path = "/api/v1/test-books/{id}/practice-tests-with-status",
+    params(
+        ("id" = Uuid, Path, description = "Test book ID"),
+        ("subject_id" = Option<Uuid>, Query, description = "Filter by subject ID")
+    ),
+    responses(
+        (status = 200, description = "Practice tests with status retrieved", body = ApiResponse<Vec<PracticeTestWithStatusResponse>>),
+        (status = 401, description = "Unauthorized"),
+        (status = 404, description = "Test book not found"),
+    ),
+    tag = "tests",
+    security(("bearerAuth" = []))
+)]
+pub async fn list_practice_tests_with_status(
+    State(state): State<AppState>,
+    user: CurrentUser,
+    Path(book_id): Path<Uuid>,
+    Query(params): Query<std::collections::HashMap<String, String>>,
+) -> Result<Json<ApiResponse<Vec<PracticeTestWithStatusResponse>>>, AppError> {
+    let subject_id = params
+        .get("subject_id")
+        .and_then(|s| Uuid::parse_str(s).ok());
+
+    // Verify test book exists
+    state
+        .test_management_service
+        .get_test_book(book_id)
+        .await
+        .map_err(|e| handle_service_error("service_call", e))?;
+
+    // Get practice tests for this book
+    let practice_tests = state
+        .test_management_service
+        .list_practice_tests_by_test_book(book_id)
+        .await
+        .map_err(|e| handle_service_error("service_call", e))?;
+
+    // Filter by subject if provided
+    let filtered_tests: Vec<_> = if let Some(subject_id) = subject_id {
+        practice_tests
+            .into_iter()
+            .filter(|pt| pt.subject_id == subject_id)
+            .collect()
+    } else {
+        practice_tests
+    };
+
+    // Get status for each test
+    let mut tests_with_status = Vec::new();
+    for test in filtered_tests {
+        // Get latest result for this user and test
+        let latest_result = match state
+            .test_result_repo
+            .find_latest_by_user_and_practice_test(user.id, test.id)
+            .await
+        {
+            Ok(result) => result,
+            Err(e) => {
+                // Log error and continue with None (test is available)
+                error!("Error checking test result: {:?}", e);
+                None
+            }
+        };
+
+        let (status, last_solved_at, result_id, hours_until_retake) = if let Some(result) = latest_result {
+            // Check if 24 hours have passed
+            use chrono::{Utc, Duration};
+            let duration = Utc::now() - result.solved_at;
+            let hours_since = duration.num_seconds() as f64 / 3600.0;
+            
+            if hours_since < 24.0 {
+                (
+                    "waiting".to_string(),
+                    Some(result.solved_at),
+                    Some(result.id),
+                    Some(24.0 - hours_since),
+                )
+            } else {
+                (
+                    "solved".to_string(),
+                    Some(result.solved_at),
+                    Some(result.id),
+                    None,
+                )
+            }
+        } else {
+            ("available".to_string(), None, None, None)
+        };
+
+        tests_with_status.push(PracticeTestWithStatusResponse {
+            id: test.id,
+            name: test.name,
+            test_number: test.test_number,
+            question_count: test.question_count,
+            answer_key: test.answer_key,
+            test_book_id: test.test_book_id,
+            subject_id: test.subject_id,
+            created_at: test.created_at,
+            status,
+            last_solved_at,
+            result_id,
+            hours_until_retake,
+        });
+    }
+
+    Ok(Json(ApiResponse::success(tests_with_status)))
 }
 
