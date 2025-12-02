@@ -43,7 +43,7 @@ pub enum TestManagementError {
     #[error("Duplicate subject name for exam type")]
     DuplicateSubjectName,
 
-    #[error("Duplicate test number for test book")]
+    #[error("A test with this name and number already exists for this test book and subject")]
     DuplicateTestNumber,
 
     #[error("Internal error: {0}")]
@@ -52,6 +52,12 @@ pub enum TestManagementError {
 
 impl From<DomainError> for TestManagementError {
     fn from(err: DomainError) -> Self {
+        // Check for duplicate practice test constraint violation
+        if let DomainError::DatabaseError(ref msg) = err {
+            if msg.contains("practice_tests_book_subject_name_number_unique") {
+                return TestManagementError::DuplicateTestNumber;
+            }
+        }
         TestManagementError::InternalError(err.to_string())
     }
 }

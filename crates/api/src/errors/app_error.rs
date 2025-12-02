@@ -187,7 +187,7 @@ impl From<TestManagementError> for AppError {
             TestManagementError::DuplicateLessonName => AppError::Conflict("Lesson name already exists".to_string()),
             TestManagementError::DuplicateExamTypeName => AppError::Conflict("Exam type name already exists".to_string()),
             TestManagementError::DuplicateSubjectName => AppError::Conflict("Subject name already exists for this exam type".to_string()),
-            TestManagementError::DuplicateTestNumber => AppError::Conflict("Test number already exists for this test book".to_string()),
+            TestManagementError::DuplicateTestNumber => AppError::Conflict("A test with this name and number already exists for this test book and subject".to_string()),
             TestManagementError::InternalError(_) => AppError::InternalServerError,
         }
     }

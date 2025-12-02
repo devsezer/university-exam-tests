@@ -67,7 +67,19 @@ impl PracticeTestRepository for PgPracticeTestRepository {
         .bind(practice_test.created_at)
         .fetch_one(&self.pool)
         .await
-        .map_err(|e| DomainError::DatabaseError(e.to_string()))?;
+        .map_err(|e| {
+            if let sqlx::Error::Database(ref db_err) = e {
+                if db_err.is_unique_violation() {
+                    let constraint = db_err.constraint().unwrap_or("");
+                    if constraint == "practice_tests_book_subject_name_number_unique" {
+                        return DomainError::DatabaseError(
+                            "duplicate key value violates unique constraint \"practice_tests_book_subject_name_number_unique\"".to_string(),
+                        );
+                    }
+                }
+            }
+            DomainError::DatabaseError(e.to_string())
+        })?;
 
         Ok(row.into())
     }
@@ -123,7 +135,19 @@ impl PracticeTestRepository for PgPracticeTestRepository {
         .bind(practice_test.subject_id)
         .fetch_one(&self.pool)
         .await
-        .map_err(|e| DomainError::DatabaseError(e.to_string()))?;
+        .map_err(|e| {
+            if let sqlx::Error::Database(ref db_err) = e {
+                if db_err.is_unique_violation() {
+                    let constraint = db_err.constraint().unwrap_or("");
+                    if constraint == "practice_tests_book_subject_name_number_unique" {
+                        return DomainError::DatabaseError(
+                            "duplicate key value violates unique constraint \"practice_tests_book_subject_name_number_unique\"".to_string(),
+                        );
+                    }
+                }
+            }
+            DomainError::DatabaseError(e.to_string())
+        })?;
 
         Ok(row.into())
     }

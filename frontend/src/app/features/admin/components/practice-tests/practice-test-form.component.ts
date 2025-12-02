@@ -85,6 +85,9 @@ import { AnswerKeyCounterComponent } from '../../../../shared/components/answer-
                    class="mt-1 text-sm text-red-600">
                 Ad gereklidir (1-255 karakter)
               </div>
+              <div class="mt-1 text-sm text-gray-500">
+                Test adı ve numarası kombinasyonu, seçilen test kitabı ve konu için benzersiz olmalıdır.
+              </div>
             </div>
 
             <div class="grid grid-cols-2 gap-4">
@@ -323,7 +326,8 @@ export class PracticeTestFormComponent implements OnInit {
           },
           error: (error) => {
             this.isSubmitting.set(false);
-            this.errorMessage.set(error.error?.error?.message || 'Güncelleme başarısız.');
+            const errorMsg = error.error?.error?.message || error.error?.message || 'Güncelleme başarısız.';
+            this.errorMessage.set(errorMsg);
           }
         });
       } else {
@@ -341,7 +345,8 @@ export class PracticeTestFormComponent implements OnInit {
           },
           error: (error) => {
             this.isSubmitting.set(false);
-            this.errorMessage.set(error.error?.error?.message || 'Kayıt başarısız.');
+            const errorMsg = error.error?.error?.message || error.error?.message || 'Kayıt başarısız.';
+            this.errorMessage.set(errorMsg);
           }
         });
       }
