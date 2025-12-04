@@ -256,3 +256,7 @@ Bu yaklaşım:
 
 Bu değişiklikler 2024 yılında yapılmıştır ve tüm frontend dropdown'ları modern custom dropdown component'i ile değiştirilmiştir.
 
+
+
+
+
